@@ -3,6 +3,9 @@
   "name": "Breathe",
   "description": "A Brave/Chrome extension for Facebook Messenger that gives couples a shared emotion regulation toolkit",
   "version": "1.0",
+  "background": {
+    "service_worker": "background.js"
+  },
   "permissions": [
     "activeTab",
     "storage",
@@ -14,7 +17,16 @@
   "content_scripts": [
     {
       "matches": ["*://www.messenger.com/*"],
-      "js": ["content.js"]
+      "css": ["styles.css"],
+      "js": [
+        "overlay.js",
+        "calm.js",
+        "status.js",
+        "timeout.js",
+        "reentry.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
     }
   ],
   "web_accessible_resources": [
