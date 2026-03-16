@@ -9,10 +9,20 @@
   const modules = (window.BreatheModules = window.BreatheModules || {});
   const ROOT_ID = "breathe-widget-root";
   const DARK_MODE_KEY = "breathe_dark_mode";
+  const POSITION_KEY = "breathe_position";
+  const CUSTOM_POS_KEY = "breathe_custom_pos";
+  const POSITION_PRESETS = {
+    "bottom-right": { bottom: "16px", right: "16px", top: "auto", left: "auto" },
+    "bottom-left": { bottom: "16px", left: "16px", top: "auto", right: "auto" },
+    "top-right": { top: "16px", right: "16px", bottom: "auto", left: "auto" },
+    "top-left": { top: "16px", left: "16px", bottom: "auto", right: "auto" },
+  };
 
   let observer = null;
   let checkQueued = false;
   let hasThemeListener = false;
+  let hasPositionListener = false;
+  let titleResetTimerId = null;
 
   function withGuard(taskName, fn) {
     try {
@@ -22,24 +32,49 @@
     }
   }
 
-  function updateStatusDot(dotElement, state) {
+  function updateStatusDot(dotElement, titleElement, state) {
     if (!dotElement) {
       return;
     }
 
     dotElement.className = "breathe-status-dot";
+
     const ownStatus = typeof state === "string" ? state : state && state.ownStatus;
     const partnerStatus = state && state.partnerStatus;
+    const partnerEvent = state && state.partnerEvent;
     const displayStatus = partnerStatus || ownStatus;
 
-    if (!displayStatus) {
+    if (titleResetTimerId) {
+      window.clearTimeout(titleResetTimerId);
+      titleResetTimerId = null;
+    }
+
+    if (displayStatus) {
+      dotElement.classList.add("is-visible", `is-${displayStatus}`);
+      if (partnerStatus) {
+        dotElement.classList.add("is-partner");
+      }
+    }
+
+    if (!titleElement) {
       return;
     }
 
-    dotElement.classList.add("is-visible", `is-${displayStatus}`);
-    if (partnerStatus) {
-      dotElement.classList.add("is-partner");
+    if (partnerEvent === "timeout") {
+      titleElement.textContent = "Breathe · paused";
+      return;
     }
+
+    if (partnerEvent === "peace") {
+      titleElement.textContent = "Breathe · ready \u2713";
+      titleResetTimerId = window.setTimeout(() => {
+        titleElement.textContent = "Breathe";
+        titleResetTimerId = null;
+      }, 4000);
+      return;
+    }
+
+    titleElement.textContent = "Breathe";
   }
 
   function hideSubPanels() {
@@ -135,6 +170,151 @@
     hasThemeListener = true;
   }
 
+  function applyPosition(root) {
+    const storage = getStorage();
+    if (!storage || !root) {
+      return;
+    }
+
+    storage.get([POSITION_KEY, CUSTOM_POS_KEY], (result) => {
+      if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
+        return;
+      }
+
+      const custom = result && result[CUSTOM_POS_KEY];
+      if (
+        custom &&
+        Number.isFinite(custom.top) &&
+        Number.isFinite(custom.left)
+      ) {
+        root.style.top = `${custom.top}px`;
+        root.style.left = `${custom.left}px`;
+        root.style.bottom = "auto";
+        root.style.right = "auto";
+        return;
+      }
+
+      const preset = result && result[POSITION_KEY] ? result[POSITION_KEY] : "bottom-right";
+      const coords = POSITION_PRESETS[preset] || POSITION_PRESETS["bottom-right"];
+      root.style.top = coords.top;
+      root.style.right = coords.right;
+      root.style.bottom = coords.bottom;
+      root.style.left = coords.left;
+    });
+  }
+
+  function clampPosition(root, left, top) {
+    const maxLeft = Math.max(0, window.innerWidth - root.offsetWidth);
+    const maxTop = Math.max(0, window.innerHeight - root.offsetHeight);
+    return {
+      left: Math.max(0, Math.min(maxLeft, left)),
+      top: Math.max(0, Math.min(maxTop, top)),
+    };
+  }
+
+  function makeDraggable(root, handle) {
+    const storage = getStorage();
+    if (!root || !handle || !storage) {
+      return;
+    }
+
+    let dragging = false;
+    let moved = false;
+    let startX = 0;
+    let startY = 0;
+    let startLeft = 0;
+    let startTop = 0;
+
+    handle.addEventListener("mousedown", (event) => {
+      if (event.button !== 0) {
+        return;
+      }
+
+      dragging = true;
+      moved = false;
+
+      const rect = root.getBoundingClientRect();
+      startX = event.clientX;
+      startY = event.clientY;
+      startLeft = rect.left;
+      startTop = rect.top;
+
+      root.style.transition = "none";
+      root.style.right = "auto";
+      root.style.bottom = "auto";
+      root.style.left = `${startLeft}px`;
+      root.style.top = `${startTop}px`;
+
+      event.preventDefault();
+    });
+
+    document.addEventListener("mousemove", (event) => {
+      if (!dragging) {
+        return;
+      }
+
+      const dx = event.clientX - startX;
+      const dy = event.clientY - startY;
+      moved = moved || Math.abs(dx) > 3 || Math.abs(dy) > 3;
+
+      const clamped = clampPosition(root, startLeft + dx, startTop + dy);
+      root.style.left = `${clamped.left}px`;
+      root.style.top = `${clamped.top}px`;
+    });
+
+    document.addEventListener("mouseup", () => {
+      if (!dragging) {
+        return;
+      }
+
+      dragging = false;
+      root.style.transition = "";
+
+      if (!moved) {
+        return;
+      }
+
+      storage.set({
+        [CUSTOM_POS_KEY]: {
+          left: parseFloat(root.style.left),
+          top: parseFloat(root.style.top),
+        },
+      });
+    });
+
+    handle.addEventListener("click", (event) => {
+      if (!moved) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      moved = false;
+    }, true);
+  }
+
+  function ensurePositionSyncListener(root) {
+    if (hasPositionListener || !root || typeof chrome === "undefined") {
+      return;
+    }
+    if (!chrome.storage || !chrome.storage.onChanged) {
+      return;
+    }
+
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName !== "local") {
+        return;
+      }
+      if (!changes[POSITION_KEY] && !changes[CUSTOM_POS_KEY]) {
+        return;
+      }
+      const currentRoot = document.getElementById(ROOT_ID) || root;
+      applyPosition(currentRoot);
+    });
+
+    hasPositionListener = true;
+  }
+
   function createButton(label, className, iconKind, onClick) {
     const button = document.createElement("button");
     button.type = "button";
@@ -177,6 +357,19 @@
 
     const panel = document.createElement("div");
     panel.className = "breathe-widget-panel";
+
+    const partnerRow = document.createElement("div");
+    partnerRow.id = "breathe-partner-row";
+    partnerRow.className = "breathe-partner-row is-hidden";
+
+    const partnerDot = document.createElement("span");
+    partnerDot.className = "breathe-partner-dot";
+
+    const partnerLabel = document.createElement("span");
+    partnerLabel.className = "breathe-partner-label";
+    partnerLabel.textContent = "Partner";
+
+    partnerRow.append(partnerDot, partnerLabel);
 
     const buttonsRow = document.createElement("div");
     buttonsRow.className = "breathe-buttons-row";
@@ -234,7 +427,7 @@
     });
 
     buttonsRow.append(calmButton, statusButton, timeoutButton, talkButton);
-    panel.append(buttonsRow, statusPanel, reentryPanel);
+    panel.append(partnerRow, buttonsRow, statusPanel, reentryPanel);
     root.append(toggle, panel);
 
     toggle.addEventListener("click", () => {
@@ -247,13 +440,37 @@
     });
 
     document.body.appendChild(root);
+    applyPosition(root);
+    makeDraggable(root, toggle);
+    ensurePositionSyncListener(root);
+
+    modules.ui = modules.ui || {};
+    modules.ui.setPartnerStatus = (color, eventName) => {
+      if (!color && !eventName) {
+        partnerRow.classList.add("is-hidden");
+        partnerDot.className = "breathe-partner-dot";
+        partnerLabel.textContent = "Partner";
+        return;
+      }
+
+      partnerRow.classList.remove("is-hidden");
+      partnerDot.className = color ? `breathe-partner-dot is-${color}` : "breathe-partner-dot";
+
+      const labels = {
+        timeout: "Partner is paused",
+        calm: "Partner is calming",
+        peace: "Partner is ready \u2713",
+      };
+
+      partnerLabel.textContent = labels[eventName] || `Partner is ${color}`;
+    };
 
     withGuard("status mount", () => {
       if (modules.status && modules.status.mountPanel) {
         modules.status.mountPanel(statusPanel);
       }
       if (modules.status && modules.status.setStatusDotListener) {
-        modules.status.setStatusDotListener((status) => updateStatusDot(statusDot, status));
+        modules.status.setStatusDotListener((status) => updateStatusDot(statusDot, title, status));
       }
     });
 

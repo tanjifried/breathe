@@ -86,6 +86,65 @@ textarea {
   accent-color: var(--options-accent);
 }
 
+.option-section {
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid var(--options-border);
+  border-radius: 10px;
+  background: #f9fdfa;
+}
+
+.option-heading {
+  margin: 0;
+  font-size: 14px;
+}
+
+.option-desc {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: rgba(32, 48, 42, 0.78);
+}
+
+.pos-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.pos-btn {
+  padding: 10px;
+  border: 1px solid #c8d8d2;
+  border-radius: 10px;
+  background: #f7fcf9;
+  color: #1f302a;
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+
+.pos-btn:hover {
+  background: #edf7f2;
+}
+
+.pos-btn.is-active {
+  border-color: #4f8b78;
+  background: rgba(79, 139, 120, 0.08);
+  font-weight: 600;
+}
+
+.reset-btn {
+  margin-top: 8px;
+  border: none;
+  background: none;
+  color: #4f8b78;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 0;
+  text-decoration: underline;
+}
+
 button {
   border: 1px solid var(--options-accent);
   background: var(--options-accent);

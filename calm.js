@@ -11,6 +11,7 @@
 
   let timerId = null;
   let activeSessionId = null;
+  let pillUpdaterId = null;
 
   function getStorage() {
     if (typeof chrome === "undefined") {
@@ -91,17 +92,33 @@
     return postSession("/api/sessions/start", { featureUsed: "calm" });
   }
 
-  async function endServerSession(sessionId) {
+  async function endServerSession(sessionId, extraPayload) {
     if (!sessionId) {
       return null;
     }
-    return postSession("/api/sessions/end", { sessionId });
+    return postSession("/api/sessions/end", { sessionId, ...(extraPayload || {}) });
   }
 
   function stopTimer() {
     if (timerId) {
       window.clearInterval(timerId);
       timerId = null;
+    }
+
+    if (pillUpdaterId) {
+      window.clearInterval(pillUpdaterId);
+      pillUpdaterId = null;
+    }
+  }
+
+  function removeMinimizedPill() {
+    const pill = document.getElementById("breathe-mini-pill");
+    if (pill) {
+      if (overlayTools.removeNode) {
+        overlayTools.removeNode(pill);
+      } else if (pill.parentNode) {
+        pill.parentNode.removeChild(pill);
+      }
     }
   }
 
@@ -124,13 +141,63 @@
     container.append(doneTitle, doneBody, dismissButton);
   }
 
+  function buildEarlyExitConfirm(container, onConfirm) {
+    const confirmCard = document.createElement("div");
+    confirmCard.className = "breathe-calm-confirm";
+
+    const checkIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    checkIcon.setAttribute("viewBox", "0 0 24 24");
+    checkIcon.setAttribute("fill", "none");
+    checkIcon.setAttribute("stroke", "currentColor");
+    checkIcon.setAttribute("stroke-width", "3");
+    checkIcon.setAttribute("class", "breathe-calm-confirm-icon");
+
+    const checkPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    checkPath.setAttribute("d", "M5 13l4 4L19 7");
+    checkIcon.appendChild(checkPath);
+
+    const confirmText = document.createElement("div");
+    confirmText.className = "breathe-calm-confirm-text";
+
+    const confirmTitle = document.createElement("p");
+    confirmTitle.className = "breathe-calm-confirm-title";
+    confirmTitle.textContent = "Yes, I feel calm - end session";
+
+    const confirmSub = document.createElement("p");
+    confirmSub.className = "breathe-calm-confirm-sub";
+    confirmSub.textContent = "Tap to confirm and return to chat.";
+
+    confirmText.append(confirmTitle, confirmSub);
+    confirmCard.append(checkIcon, confirmText);
+    confirmCard.addEventListener("click", onConfirm);
+
+    container.appendChild(confirmCard);
+  }
+
+  function stop(extraPayload) {
+    const sessionToEnd = activeSessionId;
+    activeSessionId = null;
+    void endServerSession(sessionToEnd, extraPayload || null);
+    stopTimer();
+    removeMinimizedPill();
+
+    const existing = document.getElementById(OVERLAY_ID);
+    if (existing) {
+      if (overlayTools.removeNode) {
+        overlayTools.removeNode(existing);
+      } else if (existing.parentNode) {
+        existing.parentNode.removeChild(existing);
+      }
+    }
+  }
+
   function start(options) {
     const durationSeconds =
       options && Number.isFinite(options.durationSeconds)
         ? Math.max(5, Math.floor(options.durationSeconds))
         : DEFAULT_DURATION_SECONDS;
 
-    stopTimer();
+    stop();
 
     const overlay = overlayTools.createOverlay
       ? overlayTools.createOverlay(OVERLAY_ID, "breathe-overlay breathe-calm-overlay")
@@ -157,24 +224,67 @@
     const timer = document.createElement("div");
     timer.className = "breathe-overlay-timer";
 
-    shell.append(title, body, orb, timer);
+    const controlsRow = document.createElement("div");
+    controlsRow.className = "breathe-overlay-controls";
+
+    const minimizeButton = document.createElement("button");
+    minimizeButton.type = "button";
+    minimizeButton.className = "breathe-ghost-button";
+    minimizeButton.textContent = "Minimize";
+
+    controlsRow.appendChild(minimizeButton);
+
+    const earlyExitLink = document.createElement("button");
+    earlyExitLink.type = "button";
+    earlyExitLink.className = "breathe-ghost-button";
+    earlyExitLink.style.fontSize = "11px";
+    earlyExitLink.style.marginTop = "4px";
+    earlyExitLink.textContent = "I'm calm early ->";
+
+    shell.append(title, body, orb, timer, controlsRow, earlyExitLink);
     overlay.appendChild(shell);
 
     let remaining = durationSeconds;
     const formatDuration = overlayTools.formatDuration || ((value) => `${value}`);
     timer.textContent = formatDuration(remaining);
 
-    const dismissOverlay = () => {
-      const sessionToEnd = activeSessionId;
-      activeSessionId = null;
-      void endServerSession(sessionToEnd);
-      stopTimer();
-      if (overlayTools.removeNode) {
-        overlayTools.removeNode(overlay);
-      } else if (overlay.parentNode) {
-        overlay.parentNode.removeChild(overlay);
-      }
+    const dismissOverlay = (extraPayload) => {
+      stop(extraPayload);
     };
+
+    minimizeButton.addEventListener("click", () => {
+      overlay.style.display = "none";
+
+      if (!overlayTools.createMinimizedPill) {
+        return;
+      }
+
+      removeMinimizedPill();
+      overlayTools.createMinimizedPill(`Calm · ${formatDuration(remaining)}`, "calm", () => {
+        overlay.style.display = "";
+      });
+
+      if (pillUpdaterId) {
+        window.clearInterval(pillUpdaterId);
+      }
+
+      pillUpdaterId = window.setInterval(() => {
+        const pillLabel = document.getElementById("breathe-mini-pill-label");
+        if (!pillLabel) {
+          window.clearInterval(pillUpdaterId);
+          pillUpdaterId = null;
+          return;
+        }
+        pillLabel.textContent = `Calm · ${formatDuration(remaining)}`;
+      }, 1000);
+    });
+
+    earlyExitLink.addEventListener("click", () => {
+      earlyExitLink.style.display = "none";
+      buildEarlyExitConfirm(shell, () => {
+        dismissOverlay({ calmedEarly: true });
+      });
+    });
 
     const lockNotice = document.createElement("p");
     lockNotice.className = "breathe-overlay-body";
@@ -205,12 +315,15 @@
       }
 
       stopTimer();
+      removeMinimizedPill();
+      overlay.style.display = "";
       buildDoneState(shell, dismissOverlay);
     }, 1000);
   }
 
   modules.calm = {
     start,
+    stop,
     stopTimer,
   };
 })();

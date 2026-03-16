@@ -18,6 +18,7 @@
   let timerId = null;
   let blurTarget = null;
   let activeSessionId = null;
+  let pillUpdaterId = null;
 
   function getStorage() {
     if (typeof chrome === "undefined") {
@@ -121,6 +122,24 @@
       window.clearInterval(timerId);
       timerId = null;
     }
+
+    if (pillUpdaterId) {
+      window.clearInterval(pillUpdaterId);
+      pillUpdaterId = null;
+    }
+  }
+
+  function removeMinimizedPill() {
+    const pill = document.getElementById("breathe-mini-pill");
+    if (!pill) {
+      return;
+    }
+
+    if (overlayTools.removeNode) {
+      overlayTools.removeNode(pill);
+    } else if (pill.parentNode) {
+      pill.parentNode.removeChild(pill);
+    }
   }
 
   function clearBlur() {
@@ -150,12 +169,160 @@
     shell.append(title, body, doneButton);
   }
 
+  function buildPrivateNote(container) {
+    const noteWrap = document.createElement("div");
+    noteWrap.className = "breathe-private-note";
+
+    const textarea = document.createElement("textarea");
+    textarea.className = "breathe-note-textarea";
+    textarea.placeholder = "Write what you're feeling. No one else sees this.";
+    textarea.rows = 4;
+
+    const saveButton = document.createElement("button");
+    saveButton.type = "button";
+    saveButton.className = "breathe-primary-button";
+    saveButton.style.marginTop = "8px";
+    saveButton.style.width = "100%";
+    saveButton.textContent = "Save note privately";
+
+    saveButton.addEventListener("click", () => {
+      const note = textarea.value.trim();
+      if (!note) {
+        return;
+      }
+
+      const storage = getStorage();
+      if (storage) {
+        const key = `breathe_note_${Date.now()}`;
+        storage.set({
+          [key]: {
+            text: note,
+            at: new Date().toISOString(),
+          },
+        });
+      }
+
+      saveButton.textContent = "Saved.";
+      saveButton.disabled = true;
+      textarea.disabled = true;
+    });
+
+    noteWrap.append(textarea, saveButton);
+    container.appendChild(noteWrap);
+    textarea.focus();
+  }
+
+  function buildSosPanel(container, onExtend) {
+    const panel = document.createElement("div");
+    panel.className = "breathe-sos-panel";
+
+    const title = document.createElement("p");
+    title.className = "breathe-sos-title";
+    title.textContent = "That's okay. Try one of these.";
+    panel.appendChild(title);
+
+    const items = [
+      {
+        icon: "\ud83d\udeb6",
+        label: "Step away briefly",
+        sub: "Walk to another room for 5 minutes",
+      },
+      {
+        icon: "\ud83d\udca7",
+        label: "Cold water on your wrists",
+        sub: "Fastest way to reset your body",
+      },
+      {
+        icon: "\u270d\ufe0f",
+        label: "Write it out",
+        sub: "Private note - just for you",
+        action: "write",
+      },
+      {
+        icon: "\u23f1\ufe0f",
+        label: "Extend timeout +10 min",
+        sub: "More time, no pressure",
+        action: "extend",
+      },
+    ];
+
+    items.forEach((itemData) => {
+      const item = document.createElement("div");
+      item.className = `breathe-sos-item${itemData.action ? " is-actionable" : ""}`;
+
+      const iconElement = document.createElement("div");
+      iconElement.className = "breathe-sos-icon";
+      iconElement.textContent = itemData.icon;
+
+      const textElement = document.createElement("div");
+      textElement.className = "breathe-sos-text";
+
+      const labelElement = document.createElement("p");
+      labelElement.className = "breathe-sos-label";
+      labelElement.textContent = itemData.label;
+
+      const subElement = document.createElement("p");
+      subElement.className = "breathe-sos-sub";
+      subElement.textContent = itemData.sub;
+
+      textElement.append(labelElement, subElement);
+      item.append(iconElement, textElement);
+
+      if (itemData.action === "extend") {
+        let didExtend = false;
+        item.addEventListener("click", () => {
+          if (didExtend) {
+            return;
+          }
+
+          didExtend = true;
+          onExtend(10 * 60);
+          void postSession("/api/sessions/extend", {
+            sessionId: activeSessionId,
+            addedSeconds: 600,
+          });
+
+          labelElement.textContent = "+10 min added";
+          subElement.textContent = "Hang in there.";
+          item.classList.remove("is-actionable");
+          item.style.cursor = "default";
+        });
+      }
+
+      if (itemData.action === "write") {
+        item.addEventListener("click", () => {
+          buildPrivateNote(panel);
+          item.remove();
+        });
+      }
+
+      panel.appendChild(item);
+    });
+
+    container.appendChild(panel);
+  }
+
+  function buildSosLink(container, onExtend) {
+    const sosLink = document.createElement("button");
+    sosLink.type = "button";
+    sosLink.className = "breathe-ghost-button is-danger";
+    sosLink.style.fontSize = "11px";
+    sosLink.style.marginTop = "8px";
+    sosLink.textContent = "Still overwhelmed?";
+    sosLink.addEventListener("click", () => {
+      sosLink.remove();
+      buildSosPanel(container, onExtend);
+    });
+    container.appendChild(sosLink);
+  }
+
   function stop() {
     const sessionToEnd = activeSessionId;
     activeSessionId = null;
     void endServerSession(sessionToEnd);
 
     stopTimer();
+    removeMinimizedPill();
     clearBlur();
 
     const existing = document.getElementById(OVERLAY_ID);
@@ -203,26 +370,73 @@
     const timer = document.createElement("div");
     timer.className = "breathe-overlay-timer";
 
+    const controlsRow = document.createElement("div");
+    controlsRow.className = "breathe-overlay-controls";
+
+    const minimizeButton = document.createElement("button");
+    minimizeButton.type = "button";
+    minimizeButton.className = "breathe-ghost-button";
+    minimizeButton.textContent = "Minimize";
+    controlsRow.appendChild(minimizeButton);
+
     const lockNotice = document.createElement("p");
     lockNotice.className = "breathe-overlay-body";
     lockNotice.style.display = "none";
 
-    shell.append(title, body, lockNotice, timer);
+    shell.append(title, body, lockNotice, timer, controlsRow);
     overlay.appendChild(shell);
 
     let remaining = durationSeconds;
+    let sosShown = false;
+    const SOS_TRIGGER_SECONDS = 5 * 60;
     const formatDuration = overlayTools.formatDuration || ((value) => `${value}`);
     timer.textContent = formatDuration(remaining);
+
+    minimizeButton.addEventListener("click", () => {
+      overlay.style.display = "none";
+
+      if (!overlayTools.createMinimizedPill) {
+        return;
+      }
+
+      removeMinimizedPill();
+      overlayTools.createMinimizedPill(`Timeout · ${formatDuration(remaining)}`, "timeout", () => {
+        overlay.style.display = "";
+      });
+
+      if (pillUpdaterId) {
+        window.clearInterval(pillUpdaterId);
+      }
+
+      pillUpdaterId = window.setInterval(() => {
+        const pillLabel = document.getElementById("breathe-mini-pill-label");
+        if (!pillLabel) {
+          window.clearInterval(pillUpdaterId);
+          pillUpdaterId = null;
+          return;
+        }
+        pillLabel.textContent = `Timeout · ${formatDuration(remaining)}`;
+      }, 1000);
+    });
 
     timerId = window.setInterval(() => {
       remaining -= 1;
       timer.textContent = formatDuration(remaining);
+
+      if (!sosShown && durationSeconds - remaining >= SOS_TRIGGER_SECONDS) {
+        sosShown = true;
+        buildSosLink(shell, (addedSeconds) => {
+          remaining += addedSeconds;
+        });
+      }
 
       if (remaining > 0) {
         return;
       }
 
       stopTimer();
+      removeMinimizedPill();
+      overlay.style.display = "";
       clearBlur();
       finish(shell, stop);
     }, 1000);

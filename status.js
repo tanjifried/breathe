@@ -14,6 +14,7 @@
   let statusDotCallback = null;
   let currentStatus = null;
   let partnerStatus = null;
+  let partnerEvent = null;
   let syncSocket = null;
   let reconnectTimerId = null;
   let reconnectAttempt = 0;
@@ -47,10 +48,15 @@
   }
 
   function notifyStatusDot() {
+    if (modules.ui && typeof modules.ui.setPartnerStatus === "function") {
+      modules.ui.setPartnerStatus(partnerStatus, partnerEvent);
+    }
+
     if (typeof statusDotCallback === "function") {
       statusDotCallback({
         ownStatus: currentStatus,
         partnerStatus,
+        partnerEvent,
       });
     }
   }
@@ -164,12 +170,16 @@
     }
   }
 
-  function setPartnerStatus(value) {
+  function setPartnerStatus(value, eventName) {
     const nextStatus = isStatus(value) ? value : null;
-    if (partnerStatus === nextStatus) {
+    const nextEvent = typeof eventName === "string" ? eventName : null;
+
+    if (partnerStatus === nextStatus && partnerEvent === nextEvent) {
       return;
     }
+
     partnerStatus = nextStatus;
+    partnerEvent = nextEvent;
     notifyStatusDot();
   }
 
@@ -189,7 +199,7 @@
     if (!payload || !payload.partner) {
       return;
     }
-    setPartnerStatus(payload.partner.color);
+    setPartnerStatus(payload.partner.color, payload.partner.event || null);
   }
 
   function clearReconnectTimer() {
@@ -264,11 +274,29 @@
         return;
       }
 
-      if (!payload || payload.type !== "STATUS_UPDATE") {
+      if (!payload || typeof payload.type !== "string") {
         return;
       }
 
-      setPartnerStatus(payload.color);
+      if (payload.type === "STATUS_UPDATE") {
+        setPartnerStatus(payload.color, payload.event || null);
+        return;
+      }
+
+      if (payload.type === "PARTNER_EVENT") {
+        setPartnerStatus(payload.color || partnerStatus, payload.event || null);
+        return;
+      }
+
+      if (payload.type === "SESSION_STARTED") {
+        const eventName = payload.featureUsed === "timeout" ? "timeout" : "calm";
+        setPartnerStatus(payload.color || partnerStatus, eventName);
+        return;
+      }
+
+      if (payload.type === "SESSION_ENDED") {
+        setPartnerStatus(payload.color || partnerStatus, payload.event || "peace");
+      }
     };
 
     socket.onclose = () => {

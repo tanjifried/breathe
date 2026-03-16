@@ -35,6 +35,18 @@
           <span>Enable dark mode for Breathe on Messenger</span>
         </label>
 
+        <section class="option-section" aria-labelledby="widget-position-heading">
+          <h3 id="widget-position-heading" class="option-heading">Widget position</h3>
+          <p class="option-desc">Choose a corner or drag the widget directly on Messenger.</p>
+          <div id="pos-grid" class="pos-grid">
+            <button type="button" class="pos-btn" data-pos="top-left">Top left</button>
+            <button type="button" class="pos-btn" data-pos="top-right">Top right</button>
+            <button type="button" class="pos-btn" data-pos="bottom-left">Bottom left</button>
+            <button type="button" class="pos-btn" data-pos="bottom-right">Bottom right</button>
+          </div>
+          <button type="button" id="reset-pos-btn" class="reset-btn">Reset to default position</button>
+        </section>
+
         <div class="actions">
           <button type="submit">Save</button>
           <span id="save-message" aria-live="polite"></span>
