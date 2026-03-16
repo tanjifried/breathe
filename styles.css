@@ -1,3 +1,18 @@
+@keyframes breathe-cycle {
+  0% {
+    transform: scale(0.82);
+    opacity: 0.76;
+  }
+  50% {
+    transform: scale(1.14);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.82);
+    opacity: 0.76;
+  }
+}
+
 :root {
   --breathe-bg-soft: rgba(245, 251, 247, 0.97);
   --breathe-border: rgba(92, 125, 112, 0.35);
@@ -330,7 +345,7 @@
 .breathe-overlay {
   position: fixed;
   inset: 0;
-  z-index: 2147483646;
+  z-index: 2147483640;
   background: var(--breathe-overlay);
   display: flex;
   align-items: center;
@@ -378,6 +393,8 @@
   background: radial-gradient(circle at 30% 30%, rgba(173, 222, 198, 0.88), rgba(86, 145, 120, 0.8));
   box-shadow: 0 0 0 14px rgba(139, 202, 173, 0.17);
   animation: breathe-cycle 6s ease-in-out infinite;
+  will-change: transform;
+  isolation: isolate;
 }
 
 .breathe-timeout-overlay {
@@ -407,7 +424,7 @@
   cursor: pointer;
   box-shadow: var(--breathe-shadow);
   position: fixed;
-  z-index: 2147483647;
+  z-index: 2147483001;
   bottom: 64px;
   right: 16px;
   transition: opacity 0.2s;
@@ -424,6 +441,8 @@
   background: radial-gradient(circle at 35% 35%, rgba(173, 222, 198, 0.9), rgba(86, 145, 120, 0.85));
   animation: breathe-cycle 6s ease-in-out infinite;
   flex-shrink: 0;
+  will-change: transform;
+  isolation: isolate;
 }
 
 .breathe-timer-pill-orb.is-timeout {
@@ -560,21 +579,6 @@
 .breathe-note-textarea:focus {
   outline: none;
   border-color: #4f8b78;
-}
-
-@keyframes breathe-cycle {
-  0% {
-    transform: scale(0.82);
-    opacity: 0.76;
-  }
-  50% {
-    transform: scale(1.14);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(0.82);
-    opacity: 0.76;
-  }
 }
 
 @media (max-width: 640px) {
