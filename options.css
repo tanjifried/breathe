@@ -1,0 +1,96 @@
+:root {
+  --options-bg: #f4f8f6;
+  --options-card: #ffffff;
+  --options-border: #c9d8d2;
+  --options-text: #20302a;
+  --options-accent: #2f6f5b;
+  --options-danger: #994040;
+}
+
+body {
+  margin: 0;
+  padding: 20px;
+  background: var(--options-bg);
+  color: var(--options-text);
+  font-family: "Trebuchet MS", "Gill Sans", sans-serif;
+}
+
+.options-root {
+  max-width: 640px;
+  margin: 0 auto;
+  background: var(--options-card);
+  border: 1px solid var(--options-border);
+  border-radius: 14px;
+  padding: 18px;
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 24px;
+}
+
+.options-intro {
+  margin: 0 0 16px;
+  color: rgba(32, 48, 42, 0.8);
+}
+
+#settings-form {
+  display: grid;
+  gap: 8px;
+}
+
+.field-label {
+  margin-top: 8px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+input,
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--options-border);
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--options-text);
+}
+
+textarea {
+  resize: vertical;
+  min-height: 90px;
+}
+
+.actions {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+button {
+  border: 1px solid var(--options-accent);
+  background: var(--options-accent);
+  color: #ffffff;
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+button:hover {
+  opacity: 0.92;
+}
+
+#save-message {
+  font-size: 13px;
+}
+
+#save-message.is-error {
+  color: var(--options-danger);
+}
+
+#save-message.is-success {
+  color: var(--options-accent);
+}

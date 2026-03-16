@@ -11,8 +11,14 @@
     "storage",
     "scripting"
   ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
   "host_permissions": [
-    "*://www.messenger.com/*"
+    "*://www.messenger.com/*",
+    "http://*/*",
+    "https://*/*"
   ],
   "content_scripts": [
     {

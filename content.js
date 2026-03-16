@@ -20,17 +20,24 @@
     }
   }
 
-  function updateStatusDot(dotElement, status) {
+  function updateStatusDot(dotElement, state) {
     if (!dotElement) {
       return;
     }
 
     dotElement.className = "breathe-status-dot";
-    if (!status) {
+    const ownStatus = typeof state === "string" ? state : state && state.ownStatus;
+    const partnerStatus = state && state.partnerStatus;
+    const displayStatus = partnerStatus || ownStatus;
+
+    if (!displayStatus) {
       return;
     }
 
-    dotElement.classList.add("is-visible", `is-${status}`);
+    dotElement.classList.add("is-visible", `is-${displayStatus}`);
+    if (partnerStatus) {
+      dotElement.classList.add("is-partner");
+    }
   }
 
   function hideSubPanels() {

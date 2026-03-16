@@ -3,13 +3,21 @@
 
   const modules = (window.BreatheModules = window.BreatheModules || {});
   const STORAGE_KEY = "breathe_status";
+  const SERVER_URL_KEY = "breathe_server_url";
+  const JWT_KEY = "breathe_jwt";
   const ALLOWED_STATUSES = ["green", "yellow", "red"];
+  const MAX_RECONNECT_DELAY_MS = 30000;
 
   let panelElement = null;
   let nudgeElement = null;
   let statusButtons = {};
   let statusDotCallback = null;
   let currentStatus = null;
+  let partnerStatus = null;
+  let syncSocket = null;
+  let reconnectTimerId = null;
+  let reconnectAttempt = 0;
+  let hasStorageListener = false;
 
   function getStorage() {
     if (typeof chrome === "undefined") {
@@ -20,6 +28,31 @@
 
   function isStatus(value) {
     return ALLOWED_STATUSES.includes(value);
+  }
+
+  function normalizeServerUrl(value) {
+    if (typeof value !== "string") {
+      return "";
+    }
+    return value.trim().replace(/\/+$/, "");
+  }
+
+  function isValidHttpUrl(value) {
+    try {
+      const parsed = new URL(value);
+      return parsed.protocol === "http:" || parsed.protocol === "https:";
+    } catch (_error) {
+      return false;
+    }
+  }
+
+  function notifyStatusDot() {
+    if (typeof statusDotCallback === "function") {
+      statusDotCallback({
+        ownStatus: currentStatus,
+        partnerStatus,
+      });
+    }
   }
 
   function applyVisualState() {
@@ -39,9 +72,7 @@
       nudgeElement.classList.toggle("is-visible", currentStatus === "red");
     }
 
-    if (typeof statusDotCallback === "function") {
-      statusDotCallback(currentStatus);
-    }
+    notifyStatusDot();
   }
 
   function persistStatus(value) {
@@ -57,6 +88,227 @@
     });
   }
 
+  function loadSyncConfig() {
+    const storage = getStorage();
+    if (!storage) {
+      return Promise.resolve(null);
+    }
+
+    return new Promise((resolve) => {
+      storage.get([SERVER_URL_KEY, JWT_KEY], (result) => {
+        if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
+          resolve(null);
+          return;
+        }
+
+        const serverUrl = normalizeServerUrl(result && result[SERVER_URL_KEY]);
+        const token = typeof (result && result[JWT_KEY]) === "string" ? result[JWT_KEY].trim() : "";
+
+        if (!serverUrl || !token || !isValidHttpUrl(serverUrl)) {
+          resolve(null);
+          return;
+        }
+
+        resolve({ serverUrl, token });
+      });
+    });
+  }
+
+  function buildApiUrl(serverUrl, path) {
+    const baseUrl = normalizeServerUrl(serverUrl);
+    return `${baseUrl}${path}`;
+  }
+
+  function buildWebSocketUrl(serverUrl, token) {
+    const parsed = new URL(normalizeServerUrl(serverUrl));
+    parsed.protocol = parsed.protocol === "https:" ? "wss:" : "ws:";
+    parsed.pathname = "/ws";
+    parsed.search = "";
+    parsed.searchParams.set("token", token);
+    return parsed.toString();
+  }
+
+  async function fetchWithAuth(path, options) {
+    const config = await loadSyncConfig();
+    if (!config) {
+      return null;
+    }
+
+    const headers = {
+      Authorization: `Bearer ${config.token}`,
+      "Content-Type": "application/json",
+      ...(options && options.headers ? options.headers : {}),
+    };
+
+    try {
+      const response = await fetch(buildApiUrl(config.serverUrl, path), {
+        ...(options || {}),
+        headers,
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      if (response.status === 204) {
+        return null;
+      }
+
+      try {
+        return await response.json();
+      } catch (_jsonError) {
+        return null;
+      }
+    } catch (_fetchError) {
+      return null;
+    }
+  }
+
+  function setPartnerStatus(value) {
+    const nextStatus = isStatus(value) ? value : null;
+    if (partnerStatus === nextStatus) {
+      return;
+    }
+    partnerStatus = nextStatus;
+    notifyStatusDot();
+  }
+
+  async function syncStatusToServer(value) {
+    if (!isStatus(value)) {
+      return;
+    }
+
+    await fetchWithAuth("/api/status", {
+      method: "POST",
+      body: JSON.stringify({ color: value }),
+    });
+  }
+
+  async function fetchInitialPartnerStatus() {
+    const payload = await fetchWithAuth("/api/status", { method: "GET" });
+    if (!payload || !payload.partner) {
+      return;
+    }
+    setPartnerStatus(payload.partner.color);
+  }
+
+  function clearReconnectTimer() {
+    if (!reconnectTimerId) {
+      return;
+    }
+    window.clearTimeout(reconnectTimerId);
+    reconnectTimerId = null;
+  }
+
+  function closeSocket() {
+    clearReconnectTimer();
+    if (!syncSocket) {
+      return;
+    }
+
+    syncSocket.onopen = null;
+    syncSocket.onmessage = null;
+    syncSocket.onclose = null;
+    syncSocket.onerror = null;
+    syncSocket.close();
+    syncSocket = null;
+  }
+
+  function scheduleReconnect() {
+    if (reconnectTimerId) {
+      return;
+    }
+
+    const delay = Math.min(1000 * Math.pow(2, reconnectAttempt), MAX_RECONNECT_DELAY_MS);
+    reconnectAttempt += 1;
+    reconnectTimerId = window.setTimeout(() => {
+      reconnectTimerId = null;
+      openStatusSocket();
+    }, delay);
+  }
+
+  async function openStatusSocket() {
+    const config = await loadSyncConfig();
+    if (!config) {
+      closeSocket();
+      setPartnerStatus(null);
+      reconnectAttempt = 0;
+      return;
+    }
+
+    if (syncSocket && (syncSocket.readyState === WebSocket.OPEN || syncSocket.readyState === WebSocket.CONNECTING)) {
+      return;
+    }
+
+    let socket;
+    try {
+      socket = new WebSocket(buildWebSocketUrl(config.serverUrl, config.token));
+    } catch (_error) {
+      scheduleReconnect();
+      return;
+    }
+
+    syncSocket = socket;
+
+    socket.onopen = () => {
+      reconnectAttempt = 0;
+      clearReconnectTimer();
+      fetchInitialPartnerStatus();
+    };
+
+    socket.onmessage = (event) => {
+      let payload;
+      try {
+        payload = JSON.parse(event.data);
+      } catch (_parseError) {
+        return;
+      }
+
+      if (!payload || payload.type !== "STATUS_UPDATE") {
+        return;
+      }
+
+      setPartnerStatus(payload.color);
+    };
+
+    socket.onclose = () => {
+      if (syncSocket === socket) {
+        syncSocket = null;
+      }
+      scheduleReconnect();
+    };
+
+    socket.onerror = () => {
+      try {
+        socket.close();
+      } catch (_closeError) {
+        scheduleReconnect();
+      }
+    };
+  }
+
+  function ensureStorageSyncListener() {
+    if (hasStorageListener || typeof chrome === "undefined") {
+      return;
+    }
+
+    if (!chrome.storage || !chrome.storage.onChanged) {
+      return;
+    }
+
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName !== "local") {
+        return;
+      }
+      if (!changes[SERVER_URL_KEY] && !changes[JWT_KEY]) {
+        return;
+      }
+      openStatusSocket();
+    });
+
+    hasStorageListener = true;
+  }
+
   function setStatus(value) {
     if (!isStatus(value)) {
       return;
@@ -65,6 +317,7 @@
     currentStatus = value;
     applyVisualState();
     persistStatus(value);
+    syncStatusToServer(value);
   }
 
   function loadStatus() {
@@ -123,11 +376,13 @@
 
     panelElement.append(title, choices, nudgeElement);
     loadStatus();
+    ensureStorageSyncListener();
+    openStatusSocket();
   }
 
   function setStatusDotListener(callback) {
     statusDotCallback = callback;
-    applyVisualState();
+    notifyStatusDot();
   }
 
   function togglePanel() {
@@ -150,6 +405,7 @@
     hidePanel,
     loadStatus,
     mountPanel,
+    openStatusSocket,
     setStatus,
     setStatusDotListener,
     togglePanel,

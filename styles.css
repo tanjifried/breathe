@@ -69,6 +69,10 @@
   border-color: rgba(31, 48, 42, 0.16);
 }
 
+.breathe-status-dot.is-partner {
+  box-shadow: 0 0 0 2px rgba(31, 48, 42, 0.18);
+}
+
 .breathe-status-dot.is-green {
   background: var(--breathe-green);
 }

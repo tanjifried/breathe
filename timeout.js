@@ -6,6 +6,8 @@
 
   const OVERLAY_ID = "breathe-timeout-overlay";
   const DEFAULT_DURATION_SECONDS = 20 * 60;
+  const SERVER_URL_KEY = "breathe_server_url";
+  const JWT_KEY = "breathe_jwt";
   const TARGET_SELECTORS = [
     '[role="main"]',
     'div[aria-label*="Conversation"]',
@@ -15,6 +17,93 @@
 
   let timerId = null;
   let blurTarget = null;
+  let activeSessionId = null;
+
+  function getStorage() {
+    if (typeof chrome === "undefined") {
+      return null;
+    }
+    return chrome.storage && chrome.storage.local ? chrome.storage.local : null;
+  }
+
+  function normalizeServerUrl(value) {
+    if (typeof value !== "string") {
+      return "";
+    }
+    return value.trim().replace(/\/+$/, "");
+  }
+
+  function isValidHttpUrl(value) {
+    try {
+      const parsed = new URL(value);
+      return parsed.protocol === "http:" || parsed.protocol === "https:";
+    } catch (_error) {
+      return false;
+    }
+  }
+
+  function loadSyncConfig() {
+    const storage = getStorage();
+    if (!storage) {
+      return Promise.resolve(null);
+    }
+
+    return new Promise((resolve) => {
+      storage.get([SERVER_URL_KEY, JWT_KEY], (result) => {
+        if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
+          resolve(null);
+          return;
+        }
+
+        const serverUrl = normalizeServerUrl(result && result[SERVER_URL_KEY]);
+        const token = typeof (result && result[JWT_KEY]) === "string" ? result[JWT_KEY].trim() : "";
+
+        if (!serverUrl || !token || !isValidHttpUrl(serverUrl)) {
+          resolve(null);
+          return;
+        }
+
+        resolve({ serverUrl, token });
+      });
+    });
+  }
+
+  async function postSession(path, body) {
+    const config = await loadSyncConfig();
+    if (!config) {
+      return null;
+    }
+
+    try {
+      const response = await fetch(`${config.serverUrl}${path}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${config.token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body || {}),
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      return await response.json();
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  async function startServerSession() {
+    return postSession("/api/sessions/start", { featureUsed: "timeout" });
+  }
+
+  async function endServerSession(sessionId) {
+    if (!sessionId) {
+      return null;
+    }
+    return postSession("/api/sessions/end", { sessionId });
+  }
 
   function findBlurTarget() {
     for (const selector of TARGET_SELECTORS) {
@@ -62,6 +151,10 @@
   }
 
   function stop() {
+    const sessionToEnd = activeSessionId;
+    activeSessionId = null;
+    void endServerSession(sessionToEnd);
+
     stopTimer();
     clearBlur();
 
@@ -110,7 +203,11 @@
     const timer = document.createElement("div");
     timer.className = "breathe-overlay-timer";
 
-    shell.append(title, body, timer);
+    const lockNotice = document.createElement("p");
+    lockNotice.className = "breathe-overlay-body";
+    lockNotice.style.display = "none";
+
+    shell.append(title, body, lockNotice, timer);
     overlay.appendChild(shell);
 
     let remaining = durationSeconds;
@@ -129,6 +226,21 @@
       clearBlur();
       finish(shell, stop);
     }, 1000);
+
+    void startServerSession().then((payload) => {
+      if (!payload || !payload.sessionId) {
+        return;
+      }
+
+      activeSessionId = payload.sessionId;
+      if (!payload.locked) {
+        return;
+      }
+
+      lockNotice.textContent =
+        "Partner cooldown is active. Keep re-entry gentle when this timer ends.";
+      lockNotice.style.display = "block";
+    });
   }
 
   modules.timeout = {

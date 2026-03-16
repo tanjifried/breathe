@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Breathe Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main class="options-root">
+      <h1>Breathe Settings</h1>
+      <p class="options-intro">Configure server sync for partner status.</p>
+
+      <form id="settings-form" novalidate>
+        <label class="field-label" for="server-url">Server URL</label>
+        <input
+          id="server-url"
+          name="server-url"
+          type="url"
+          placeholder="https://yourdomain.com"
+          autocomplete="off"
+        />
+
+        <label class="field-label" for="jwt-token">JWT Token</label>
+        <textarea
+          id="jwt-token"
+          name="jwt-token"
+          rows="5"
+          placeholder="Paste your JWT token"
+          autocomplete="off"
+        ></textarea>
+
+        <div class="actions">
+          <button type="submit">Save</button>
+          <span id="save-message" aria-live="polite"></span>
+        </div>
+      </form>
+    </main>
+
+    <script src="options.js"></script>
+  </body>
+</html>
