@@ -69,6 +69,23 @@ textarea {
   gap: 10px;
 }
 
+.toggle-row {
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.toggle-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--options-accent);
+}
+
 button {
   border: 1px solid var(--options-accent);
   background: var(--options-accent);
