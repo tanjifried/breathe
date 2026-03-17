@@ -17,12 +17,13 @@
   },
   "host_permissions": [
     "*://www.messenger.com/*",
+    "*://www.facebook.com/*",
     "http://*/*",
     "https://*/*"
   ],
   "content_scripts": [
     {
-      "matches": ["*://www.messenger.com/*"],
+      "matches": ["*://www.messenger.com/*", "*://www.facebook.com/*"],
       "css": ["styles.css"],
       "js": [
         "overlay.js",
@@ -38,7 +39,7 @@
   "web_accessible_resources": [
     {
       "resources": ["styles.css"],
-      "matches": ["*://www.messenger.com/*"]
+      "matches": ["*://www.messenger.com/*", "*://www.facebook.com/*"]
     }
   ],
   "icons": {
