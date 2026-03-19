@@ -1,65 +1,89 @@
 :root {
-  --options-bg: #f4f8f6;
+  --options-bg: #f0f4f2;
   --options-card: #ffffff;
-  --options-border: #c9d8d2;
-  --options-text: #20302a;
-  --options-accent: #2f6f5b;
-  --options-danger: #994040;
+  --options-border: #d8e5df;
+  --options-text: #1a2621;
+  --options-text-muted: #5a7569;
+  --options-accent: #3a7a63;
+  --options-accent-hover: #2f6551;
+  --options-danger: #d9534f;
+  --options-focus-ring: rgba(58, 122, 99, 0.25);
 }
 
 body {
   margin: 0;
-  padding: 20px;
+  padding: 30px 20px;
   background: var(--options-bg);
   color: var(--options-text);
-  font-family: "Trebuchet MS", "Gill Sans", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
 }
 
 .options-root {
-  max-width: 640px;
+  max-width: 540px;
   margin: 0 auto;
   background: var(--options-card);
   border: 1px solid var(--options-border);
-  border-radius: 14px;
-  padding: 18px;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
 }
 
 h1 {
   margin: 0 0 8px;
-  font-size: 24px;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
 }
 
 .options-intro {
-  margin: 0 0 16px;
-  color: rgba(32, 48, 42, 0.8);
+  margin: 0 0 24px;
+  color: var(--options-text-muted);
+  font-size: 15px;
 }
 
 #settings-form {
-  display: grid;
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
 .field-label {
-  margin-top: 8px;
+  display: block;
   font-weight: 600;
   font-size: 14px;
+  margin-bottom: 6px;
+  color: var(--options-text);
 }
 
-input,
+input[type="text"],
+input[type="url"],
+input[type="number"],
 textarea {
   width: 100%;
   box-sizing: border-box;
   border: 1px solid var(--options-border);
-  border-radius: 8px;
-  padding: 10px;
-  font-size: 14px;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 15px;
   font-family: inherit;
   color: var(--options-text);
+  background: #fdfdfd;
+  transition: all 0.2s ease;
+}
+
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--options-accent);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px var(--options-focus-ring);
 }
 
 textarea {
   resize: vertical;
-  min-height: 90px;
+  min-height: 100px;
+  line-height: 1.4;
 }
 
 .actions {
@@ -70,93 +94,159 @@ textarea {
 }
 
 .toggle-row {
-  margin-top: 10px;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  gap: 12px;
+  font-size: 15px;
+  font-weight: 500;
   cursor: pointer;
+  user-select: none;
+  padding: 6px 0;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  background: #cbd6ce;
+  border-radius: 24px;
+  transition: background 0.3s ease;
+  flex-shrink: 0;
+}
+
+.toggle-switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
 }
 
 .toggle-row input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
-  margin: 0;
-  accent-color: var(--options-accent);
+  display: none;
+}
+
+.toggle-row input[type="checkbox"]:checked + .toggle-switch {
+  background: var(--options-accent);
+}
+
+.toggle-row input[type="checkbox"]:checked + .toggle-switch::after {
+  transform: translateX(20px);
 }
 
 .option-section {
-  margin-top: 12px;
-  padding: 10px;
+  margin-top: 8px;
+  padding: 20px;
   border: 1px solid var(--options-border);
-  border-radius: 10px;
-  background: #f9fdfa;
+  border-radius: 12px;
+  background: #fafcfb;
 }
 
 .option-heading {
   margin: 0;
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .option-desc {
-  margin: 6px 0 0;
-  font-size: 13px;
-  color: rgba(32, 48, 42, 0.78);
+  margin: 6px 0 16px;
+  font-size: 14px;
+  color: var(--options-text-muted);
 }
 
 .pos-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: 10px;
+  grid-template-rows: 80px 80px;
+  gap: 12px;
+  margin-bottom: 12px;
+  position: relative;
+  max-width: 280px;
+}
+
+.pos-grid::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 20px;
+  background: #e2ebe6;
+  border-radius: 4px;
+  z-index: 0;
 }
 
 .pos-btn {
+  position: relative;
+  z-index: 1;
   padding: 10px;
-  border: 1px solid #c8d8d2;
+  border: 2px solid transparent;
   border-radius: 10px;
-  background: #f7fcf9;
-  color: #1f302a;
-  font-size: 13px;
+  background: #f0f4f2;
+  color: var(--options-text-muted);
+  font-size: 14px;
   cursor: pointer;
   font-weight: 500;
-  transition: background 0.15s;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .pos-btn:hover {
-  background: #edf7f2;
+  background: #e6edea;
 }
 
 .pos-btn.is-active {
-  border-color: #4f8b78;
-  background: rgba(79, 139, 120, 0.08);
+  background: #e2f0ea;
+  border-color: var(--options-accent);
+  color: var(--options-accent);
   font-weight: 600;
+  box-shadow: 0 2px 8px rgba(58, 122, 99, 0.15);
 }
 
+.pos-btn[data-pos="top-left"] { justify-content: flex-start; align-items: flex-start; }
+.pos-btn[data-pos="top-right"] { justify-content: flex-end; align-items: flex-start; }
+.pos-btn[data-pos="bottom-left"] { justify-content: flex-start; align-items: flex-end; }
+.pos-btn[data-pos="bottom-right"] { justify-content: flex-end; align-items: flex-end; }
+
 .reset-btn {
-  margin-top: 8px;
   border: none;
   background: none;
-  color: #4f8b78;
-  font-size: 12px;
+  color: var(--options-accent);
+  font-size: 13px;
   cursor: pointer;
-  padding: 4px 0;
+  padding: 6px 0;
+  font-weight: 500;
+  transition: color 0.15s;
+}
+
+.reset-btn:hover {
+  color: var(--options-accent-hover);
   text-decoration: underline;
 }
 
-button {
-  border: 1px solid var(--options-accent);
+button[type="submit"] {
+  border: none;
   background: var(--options-accent);
   color: #ffffff;
-  border-radius: 8px;
-  padding: 8px 12px;
+  border-radius: 10px;
+  padding: 12px 24px;
+  font-size: 15px;
   cursor: pointer;
   font-weight: 600;
+  transition: background 0.2s;
+  box-shadow: 0 2px 6px rgba(58, 122, 99, 0.2);
 }
 
-button:hover {
-  opacity: 0.92;
+button[type="submit"]:hover {
+  background: var(--options-accent-hover);
 }
 
 #save-message {

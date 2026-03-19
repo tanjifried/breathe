@@ -144,12 +144,14 @@
       return;
     }
 
-    storage.get([DARK_MODE_KEY], (result) => {
-      if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
-        return;
-      }
-      applyDarkMode(result && result[DARK_MODE_KEY]);
-    });
+    try {
+      storage.get([DARK_MODE_KEY], (result) => {
+        if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
+          return;
+        }
+        applyDarkMode(result && result[DARK_MODE_KEY]);
+      });
+    } catch (e) {}
   }
 
   function ensureThemeSyncListener() {
@@ -160,14 +162,16 @@
       return;
     }
 
-    chrome.storage.onChanged.addListener((changes, areaName) => {
-      if (areaName !== "local" || !changes[DARK_MODE_KEY]) {
-        return;
-      }
-      applyDarkMode(changes[DARK_MODE_KEY].newValue);
-    });
+    try {
+      chrome.storage.onChanged.addListener((changes, areaName) => {
+        if (areaName !== "local" || !changes[DARK_MODE_KEY]) {
+          return;
+        }
+        applyDarkMode(changes[DARK_MODE_KEY].newValue);
+      });
 
-    hasThemeListener = true;
+      hasThemeListener = true;
+    } catch (e) {}
   }
 
   function applyPosition(root) {
@@ -176,31 +180,33 @@
       return;
     }
 
-    storage.get([POSITION_KEY, CUSTOM_POS_KEY], (result) => {
-      if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
-        return;
-      }
+    try {
+      storage.get([POSITION_KEY, CUSTOM_POS_KEY], (result) => {
+        if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
+          return;
+        }
 
-      const custom = result && result[CUSTOM_POS_KEY];
-      if (
-        custom &&
-        Number.isFinite(custom.top) &&
-        Number.isFinite(custom.left)
-      ) {
-        root.style.top = `${custom.top}px`;
-        root.style.left = `${custom.left}px`;
-        root.style.bottom = "auto";
-        root.style.right = "auto";
-        return;
-      }
+        const custom = result && result[CUSTOM_POS_KEY];
+        if (
+          custom &&
+          Number.isFinite(custom.top) &&
+          Number.isFinite(custom.left)
+        ) {
+          root.style.top = `${custom.top}px`;
+          root.style.left = `${custom.left}px`;
+          root.style.bottom = "auto";
+          root.style.right = "auto";
+          return;
+        }
 
-      const preset = result && result[POSITION_KEY] ? result[POSITION_KEY] : "bottom-right";
-      const coords = POSITION_PRESETS[preset] || POSITION_PRESETS["bottom-right"];
-      root.style.top = coords.top;
-      root.style.right = coords.right;
-      root.style.bottom = coords.bottom;
-      root.style.left = coords.left;
-    });
+        const preset = result && result[POSITION_KEY] ? result[POSITION_KEY] : "bottom-right";
+        const coords = POSITION_PRESETS[preset] || POSITION_PRESETS["bottom-right"];
+        root.style.top = coords.top;
+        root.style.right = coords.right;
+        root.style.bottom = coords.bottom;
+        root.style.left = coords.left;
+      });
+    } catch (e) {}
   }
 
   function clampPosition(root, left, top) {
@@ -274,12 +280,14 @@
         return;
       }
 
-      storage.set({
-        [CUSTOM_POS_KEY]: {
-          left: parseFloat(root.style.left),
-          top: parseFloat(root.style.top),
-        },
-      });
+      try {
+        storage.set({
+          [CUSTOM_POS_KEY]: {
+            left: parseFloat(root.style.left),
+            top: parseFloat(root.style.top),
+          },
+        });
+      } catch (e) {}
     });
 
     handle.addEventListener("click", (event) => {
@@ -301,18 +309,20 @@
       return;
     }
 
-    chrome.storage.onChanged.addListener((changes, areaName) => {
-      if (areaName !== "local") {
-        return;
-      }
-      if (!changes[POSITION_KEY] && !changes[CUSTOM_POS_KEY]) {
-        return;
-      }
-      const currentRoot = document.getElementById(ROOT_ID) || root;
-      applyPosition(currentRoot);
-    });
+    try {
+      chrome.storage.onChanged.addListener((changes, areaName) => {
+        if (areaName !== "local") {
+          return;
+        }
+        if (!changes[POSITION_KEY] && !changes[CUSTOM_POS_KEY]) {
+          return;
+        }
+        const currentRoot = document.getElementById(ROOT_ID) || root;
+        applyPosition(currentRoot);
+      });
 
-    hasPositionListener = true;
+      hasPositionListener = true;
+    } catch (e) {}
   }
 
   function createButton(label, className, iconKind, onClick) {

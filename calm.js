@@ -43,22 +43,26 @@
     }
 
     return new Promise((resolve) => {
-      storage.get([SERVER_URL_KEY, JWT_KEY], (result) => {
-        if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
-          resolve(null);
-          return;
-        }
+      try {
+        storage.get([SERVER_URL_KEY, JWT_KEY], (result) => {
+          if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
+            resolve(null);
+            return;
+          }
 
-        const serverUrl = normalizeServerUrl(result && result[SERVER_URL_KEY]);
-        const token = typeof (result && result[JWT_KEY]) === "string" ? result[JWT_KEY].trim() : "";
+          const serverUrl = normalizeServerUrl(result && result[SERVER_URL_KEY]);
+          const token = typeof (result && result[JWT_KEY]) === "string" ? result[JWT_KEY].trim() : "";
 
-        if (!serverUrl || !token || !isValidHttpUrl(serverUrl)) {
-          resolve(null);
-          return;
-        }
+          if (!serverUrl || !token || !isValidHttpUrl(serverUrl)) {
+            resolve(null);
+            return;
+          }
 
-        resolve({ serverUrl, token });
-      });
+          resolve({ serverUrl, token });
+        });
+      } catch (e) {
+        resolve(null);
+      }
     });
   }
 
@@ -220,6 +224,18 @@
 
     const orb = document.createElement("div");
     orb.className = "breathe-orb";
+    orb.animate(
+      [
+        { transform: "scale(0.82)", opacity: 0.76 },
+        { transform: "scale(1.14)", opacity: 1, offset: 0.5 },
+        { transform: "scale(0.82)", opacity: 0.76 }
+      ],
+      {
+        duration: 6000,
+        iterations: Infinity,
+        easing: "ease-in-out"
+      }
+    );
 
     const timer = document.createElement("div");
     timer.className = "breathe-overlay-timer";

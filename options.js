@@ -6,12 +6,14 @@
   const DARK_MODE_KEY = "breathe_dark_mode";
   const POSITION_KEY = "breathe_position";
   const CUSTOM_POS_KEY = "breathe_custom_pos";
+  const TIMEOUT_DURATION_KEY = "breathe_timeout_duration";
   const DEFAULT_POSITION = "bottom-right";
 
   const form = document.getElementById("settings-form");
   const serverUrlInput = document.getElementById("server-url");
   const jwtInput = document.getElementById("jwt-token");
   const darkModeInput = document.getElementById("dark-mode");
+  const timeoutDurationInput = document.getElementById("timeout-duration");
   const saveMessage = document.getElementById("save-message");
   const positionGrid = document.getElementById("pos-grid");
   const resetPositionButton = document.getElementById("reset-pos-btn");
@@ -117,7 +119,7 @@
       return;
     }
 
-    storage.get([SERVER_URL_KEY, JWT_KEY, DARK_MODE_KEY], (result) => {
+    storage.get([SERVER_URL_KEY, JWT_KEY, DARK_MODE_KEY, TIMEOUT_DURATION_KEY], (result) => {
       if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
         setMessage("Could not load settings.", "error");
         return;
@@ -127,6 +129,9 @@
       jwtInput.value = result && result[JWT_KEY] ? result[JWT_KEY] : "";
       if (darkModeInput) {
         darkModeInput.checked = Boolean(result && result[DARK_MODE_KEY]);
+      }
+      if (timeoutDurationInput) {
+        timeoutDurationInput.value = result && result[TIMEOUT_DURATION_KEY] ? result[TIMEOUT_DURATION_KEY] : "20";
       }
     });
 
@@ -154,6 +159,11 @@
     const serverUrl = normalizeServerUrl(serverUrlInput.value);
     const token = (jwtInput.value || "").trim();
     const darkModeEnabled = darkModeInput ? Boolean(darkModeInput.checked) : false;
+    let timeoutDuration = timeoutDurationInput ? parseInt(timeoutDurationInput.value, 10) : 20;
+    
+    if (isNaN(timeoutDuration) || timeoutDuration < 1) {
+      timeoutDuration = 20;
+    }
 
     if (serverUrl && !isValidHttpUrl(serverUrl)) {
       setMessage("Server URL must start with http:// or https://.", "error");
@@ -170,6 +180,7 @@
         [SERVER_URL_KEY]: serverUrl,
         [JWT_KEY]: token,
         [DARK_MODE_KEY]: darkModeEnabled,
+        [TIMEOUT_DURATION_KEY]: timeoutDuration,
       },
       () => {
         if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {

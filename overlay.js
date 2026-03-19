@@ -16,6 +16,100 @@
     }
   }
 
+  function getStorage() {
+    if (typeof chrome === "undefined") {
+      return null;
+    }
+    return chrome.storage && chrome.storage.local ? chrome.storage.local : null;
+  }
+
+  function clampPosition(root, left, top) {
+    const maxLeft = Math.max(0, window.innerWidth - root.offsetWidth);
+    const maxTop = Math.max(0, window.innerHeight - root.offsetHeight);
+    return {
+      left: Math.max(0, Math.min(maxLeft, left)),
+      top: Math.max(0, Math.min(maxTop, top)),
+    };
+  }
+
+  function makeDraggable(root, onExpand) {
+    const storage = getStorage();
+    if (!root || !storage) return;
+
+    let dragging = false;
+    let moved = false;
+    let startX = 0;
+    let startY = 0;
+    let startLeft = 0;
+    let startTop = 0;
+
+    root.addEventListener("mousedown", (event) => {
+      if (event.button !== 0) return;
+
+      dragging = true;
+      moved = false;
+
+      const rect = root.getBoundingClientRect();
+      startX = event.clientX;
+      startY = event.clientY;
+      startLeft = rect.left;
+      startTop = rect.top;
+
+      root.classList.add("is-dragging");
+      root.style.transition = "none";
+      root.style.right = "auto";
+      root.style.bottom = "auto";
+      root.style.left = `${startLeft}px`;
+      root.style.top = `${startTop}px`;
+
+      event.preventDefault();
+    });
+
+    document.addEventListener("mousemove", (event) => {
+      if (!dragging) return;
+
+      const dx = event.clientX - startX;
+      const dy = event.clientY - startY;
+      moved = moved || Math.abs(dx) > 3 || Math.abs(dy) > 3;
+
+      const clamped = clampPosition(root, startLeft + dx, startTop + dy);
+      root.style.left = `${clamped.left}px`;
+      root.style.top = `${clamped.top}px`;
+    });
+
+    document.addEventListener("mouseup", () => {
+      if (!dragging) return;
+      dragging = false;
+
+      root.classList.remove("is-dragging");
+      root.style.transition = "";
+
+      if (moved) {
+        try {
+          storage.set({
+            breathe_pill_pos: {
+              left: parseFloat(root.style.left),
+              top: parseFloat(root.style.top),
+            },
+          });
+        } catch (e) {}
+      }
+    });
+
+    root.addEventListener("click", (event) => {
+      if (moved) {
+        moved = false;
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      removeNode(root);
+      if (typeof onExpand === "function") {
+        onExpand();
+      }
+    });
+  }
+
   function createOverlay(id, className) {
     const existing = document.getElementById(id);
     removeNode(existing);
@@ -37,6 +131,18 @@
 
     const orb = document.createElement("div");
     orb.className = `breathe-timer-pill-orb${type === "timeout" ? " is-timeout" : ""}`;
+    orb.animate(
+      [
+        { transform: "scale(0.82)", opacity: 0.76 },
+        { transform: "scale(1.14)", opacity: 1, offset: 0.5 },
+        { transform: "scale(0.82)", opacity: 0.76 }
+      ],
+      {
+        duration: 6000,
+        iterations: Infinity,
+        easing: "ease-in-out"
+      }
+    );
 
     const label = document.createElement("span");
     label.id = "breathe-mini-pill-label";
@@ -57,14 +163,30 @@
     svg.appendChild(path);
 
     pill.append(orb, label, svg);
-    pill.addEventListener("click", () => {
-      removeNode(pill);
-      if (typeof onExpand === "function") {
-        onExpand();
-      }
-    });
 
     document.body.appendChild(pill);
+
+    const storage = getStorage();
+    if (storage) {
+      try {
+        storage.get(["breathe_pill_pos"], (result) => {
+          if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
+            return;
+          }
+          if (result && result.breathe_pill_pos) {
+            const pos = result.breathe_pill_pos;
+            pill.style.right = "auto";
+            pill.style.bottom = "auto";
+            const clamped = clampPosition(pill, pos.left, pos.top);
+            pill.style.left = `${clamped.left}px`;
+            pill.style.top = `${clamped.top}px`;
+          }
+        });
+      } catch (e) {}
+    }
+
+    makeDraggable(pill, onExpand);
+
     return pill;
   }
 

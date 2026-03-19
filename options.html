@@ -12,26 +12,44 @@
       <p class="options-intro">Configure server sync for partner status.</p>
 
       <form id="settings-form" novalidate>
-        <label class="field-label" for="server-url">Server URL</label>
-        <input
-          id="server-url"
-          name="server-url"
-          type="url"
-          placeholder="https://yourdomain.com"
-          autocomplete="off"
-        />
+        <div>
+          <label class="field-label" for="server-url">Server URL</label>
+          <input
+            id="server-url"
+            name="server-url"
+            type="url"
+            placeholder="https://yourdomain.com"
+            autocomplete="off"
+          />
+        </div>
 
-        <label class="field-label" for="jwt-token">JWT Token</label>
-        <textarea
-          id="jwt-token"
-          name="jwt-token"
-          rows="5"
-          placeholder="Paste your JWT token"
-          autocomplete="off"
-        ></textarea>
+        <div>
+          <label class="field-label" for="jwt-token">JWT Token</label>
+          <textarea
+            id="jwt-token"
+            name="jwt-token"
+            rows="4"
+            placeholder="Paste your JWT authentication token here..."
+            autocomplete="off"
+          ></textarea>
+        </div>
+
+        <div>
+          <label class="field-label" for="timeout-duration">Default Timeout Duration (Minutes)</label>
+          <input
+            id="timeout-duration"
+            name="timeout-duration"
+            type="number"
+            min="1"
+            max="120"
+            placeholder="20"
+            autocomplete="off"
+          />
+        </div>
 
         <label class="toggle-row" for="dark-mode">
           <input id="dark-mode" name="dark-mode" type="checkbox" />
+          <div class="toggle-switch"></div>
           <span>Enable dark mode for Breathe on Messenger</span>
         </label>
 

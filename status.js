@@ -88,9 +88,13 @@
     }
 
     return new Promise((resolve) => {
-      storage.set({ [STORAGE_KEY]: value }, () => {
+      try {
+        storage.set({ [STORAGE_KEY]: value }, () => {
+          resolve();
+        });
+      } catch (e) {
         resolve();
-      });
+      }
     });
   }
 
@@ -101,22 +105,26 @@
     }
 
     return new Promise((resolve) => {
-      storage.get([SERVER_URL_KEY, JWT_KEY], (result) => {
-        if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
-          resolve(null);
-          return;
-        }
+      try {
+        storage.get([SERVER_URL_KEY, JWT_KEY], (result) => {
+          if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
+            resolve(null);
+            return;
+          }
 
-        const serverUrl = normalizeServerUrl(result && result[SERVER_URL_KEY]);
-        const token = typeof (result && result[JWT_KEY]) === "string" ? result[JWT_KEY].trim() : "";
+          const serverUrl = normalizeServerUrl(result && result[SERVER_URL_KEY]);
+          const token = typeof (result && result[JWT_KEY]) === "string" ? result[JWT_KEY].trim() : "";
 
-        if (!serverUrl || !token || !isValidHttpUrl(serverUrl)) {
-          resolve(null);
-          return;
-        }
+          if (!serverUrl || !token || !isValidHttpUrl(serverUrl)) {
+            resolve(null);
+            return;
+          }
 
-        resolve({ serverUrl, token });
-      });
+          resolve({ serverUrl, token });
+        });
+      } catch (e) {
+        resolve(null);
+      }
     });
   }
 
@@ -324,17 +332,19 @@
       return;
     }
 
-    chrome.storage.onChanged.addListener((changes, areaName) => {
-      if (areaName !== "local") {
-        return;
-      }
-      if (!changes[SERVER_URL_KEY] && !changes[JWT_KEY]) {
-        return;
-      }
-      openStatusSocket();
-    });
+    try {
+      chrome.storage.onChanged.addListener((changes, areaName) => {
+        if (areaName !== "local") {
+          return;
+        }
+        if (!changes[SERVER_URL_KEY] && !changes[JWT_KEY]) {
+          return;
+        }
+        openStatusSocket();
+      });
 
-    hasStorageListener = true;
+      hasStorageListener = true;
+    } catch (e) {}
   }
 
   function setStatus(value) {
@@ -355,18 +365,22 @@
       return;
     }
 
-    storage.get([STORAGE_KEY], (result) => {
-      if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
+    try {
+      storage.get([STORAGE_KEY], (result) => {
+        if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
+          applyVisualState();
+          return;
+        }
+
+        if (result && isStatus(result[STORAGE_KEY])) {
+          currentStatus = result[STORAGE_KEY];
+        }
+
         applyVisualState();
-        return;
-      }
-
-      if (result && isStatus(result[STORAGE_KEY])) {
-        currentStatus = result[STORAGE_KEY];
-      }
-
+      });
+    } catch (e) {
       applyVisualState();
-    });
+    }
   }
 
   function createStatusButton(status, label) {

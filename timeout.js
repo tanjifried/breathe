@@ -6,6 +6,7 @@
 
   const OVERLAY_ID = "breathe-timeout-overlay";
   const DEFAULT_DURATION_SECONDS = 20 * 60;
+  const TIMEOUT_DURATION_KEY = "breathe_timeout_duration";
   const SERVER_URL_KEY = "breathe_server_url";
   const JWT_KEY = "breathe_jwt";
   const TARGET_SELECTORS = [
@@ -50,22 +51,27 @@
     }
 
     return new Promise((resolve) => {
-      storage.get([SERVER_URL_KEY, JWT_KEY], (result) => {
-        if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
-          resolve(null);
-          return;
-        }
+      try {
+        storage.get([SERVER_URL_KEY, JWT_KEY, TIMEOUT_DURATION_KEY], (result) => {
+          if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
+            resolve(null);
+            return;
+          }
 
-        const serverUrl = normalizeServerUrl(result && result[SERVER_URL_KEY]);
-        const token = typeof (result && result[JWT_KEY]) === "string" ? result[JWT_KEY].trim() : "";
+          const serverUrl = normalizeServerUrl(result && result[SERVER_URL_KEY]);
+          const token = typeof (result && result[JWT_KEY]) === "string" ? result[JWT_KEY].trim() : "";
+          const customDuration = result && result[TIMEOUT_DURATION_KEY] ? parseInt(result[TIMEOUT_DURATION_KEY], 10) * 60 : DEFAULT_DURATION_SECONDS;
 
-        if (!serverUrl || !token || !isValidHttpUrl(serverUrl)) {
-          resolve(null);
-          return;
-        }
+          if (!serverUrl || !token || !isValidHttpUrl(serverUrl)) {
+            resolve({ durationSeconds: customDuration });
+            return;
+          }
 
-        resolve({ serverUrl, token });
-      });
+          resolve({ serverUrl, token, durationSeconds: customDuration });
+        });
+      } catch (e) {
+        resolve(null);
+      }
     });
   }
 
@@ -169,6 +175,39 @@
     shell.append(title, body, doneButton);
   }
 
+  function buildEarlyExitConfirm(container, onConfirm) {
+    const confirmCard = document.createElement("div");
+    confirmCard.className = "breathe-calm-confirm";
+
+    const checkIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    checkIcon.setAttribute("viewBox", "0 0 24 24");
+    checkIcon.setAttribute("fill", "none");
+    checkIcon.setAttribute("stroke", "currentColor");
+    checkIcon.setAttribute("stroke-width", "3");
+    checkIcon.setAttribute("class", "breathe-calm-confirm-icon");
+
+    const checkPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    checkPath.setAttribute("d", "M5 13l4 4L19 7");
+    checkIcon.appendChild(checkPath);
+
+    const confirmText = document.createElement("div");
+    confirmText.className = "breathe-calm-confirm-text";
+
+    const confirmTitle = document.createElement("p");
+    confirmTitle.className = "breathe-calm-confirm-title";
+    confirmTitle.textContent = "Yes, I am ready - end timeout";
+
+    const confirmSub = document.createElement("p");
+    confirmSub.className = "breathe-calm-confirm-sub";
+    confirmSub.textContent = "Tap to confirm and return to chat.";
+
+    confirmText.append(confirmTitle, confirmSub);
+    confirmCard.append(checkIcon, confirmText);
+    confirmCard.addEventListener("click", onConfirm);
+
+    container.appendChild(confirmCard);
+  }
+
   function buildPrivateNote(container) {
     const noteWrap = document.createElement("div");
     noteWrap.className = "breathe-private-note";
@@ -193,13 +232,15 @@
 
       const storage = getStorage();
       if (storage) {
-        const key = `breathe_note_${Date.now()}`;
-        storage.set({
-          [key]: {
-            text: note,
-            at: new Date().toISOString(),
-          },
-        });
+        try {
+          const key = `breathe_note_${Date.now()}`;
+          storage.set({
+            [key]: {
+              text: note,
+              at: new Date().toISOString(),
+            },
+          });
+        } catch (e) {}
       }
 
       saveButton.textContent = "Saved.";
@@ -335,11 +376,12 @@
     }
   }
 
-  function start(options) {
+  async function start(options) {
+    const config = await loadSyncConfig();
     const durationSeconds =
       options && Number.isFinite(options.durationSeconds)
         ? Math.max(5, Math.floor(options.durationSeconds))
-        : DEFAULT_DURATION_SECONDS;
+        : (config && config.durationSeconds ? config.durationSeconds : DEFAULT_DURATION_SECONDS);
 
     stop();
 
@@ -379,11 +421,18 @@
     minimizeButton.textContent = "Minimize";
     controlsRow.appendChild(minimizeButton);
 
+    const earlyExitLink = document.createElement("button");
+    earlyExitLink.type = "button";
+    earlyExitLink.className = "breathe-ghost-button";
+    earlyExitLink.style.fontSize = "11px";
+    earlyExitLink.style.marginTop = "4px";
+    earlyExitLink.textContent = "I'm ready early ->";
+
     const lockNotice = document.createElement("p");
     lockNotice.className = "breathe-overlay-body";
     lockNotice.style.display = "none";
 
-    shell.append(title, body, lockNotice, timer, controlsRow);
+    shell.append(title, body, lockNotice, timer, controlsRow, earlyExitLink);
     overlay.appendChild(shell);
 
     let remaining = durationSeconds;
@@ -417,6 +466,13 @@
         }
         pillLabel.textContent = `Timeout · ${formatDuration(remaining)}`;
       }, 1000);
+    });
+
+    earlyExitLink.addEventListener("click", () => {
+      earlyExitLink.style.display = "none";
+      buildEarlyExitConfirm(shell, () => {
+        stop();
+      });
     });
 
     timerId = window.setInterval(() => {
