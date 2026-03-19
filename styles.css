@@ -810,3 +810,30 @@
   color: #d6e5dd;
   border-color: rgba(124, 158, 145, 0.45);
 }
+
+/* Partner notification styling */
+.breathe-partner-notification {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 4px;
+  font-size: 14px;
+  z-index: 1000000;
+  pointer-events: none;
+  animation: fadeInOut 0.3s ease-in-out;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+  10% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  90% { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+}
+
+.breathe-dark-mode .breathe-partner-notification {
+  background-color: rgba(0, 0, 0, 0.9);
+}

@@ -454,26 +454,59 @@
     makeDraggable(root, toggle);
     ensurePositionSyncListener(root);
 
-    modules.ui = modules.ui || {};
-    modules.ui.setPartnerStatus = (color, eventName) => {
-      if (!color && !eventName) {
-        partnerRow.classList.add("is-hidden");
-        partnerDot.className = "breathe-partner-dot";
-        partnerLabel.textContent = "Partner";
-        return;
-      }
+     modules.ui = modules.ui || {};
+     modules.ui.setPartnerStatus = (color, eventName) => {
+       if (!color && !eventName) {
+         partnerRow.classList.add("is-hidden");
+         partnerDot.className = "breathe-partner-dot";
+         partnerLabel.textContent = "Partner";
+         return;
+       }
 
-      partnerRow.classList.remove("is-hidden");
-      partnerDot.className = color ? `breathe-partner-dot is-${color}` : "breathe-partner-dot";
+       partnerRow.classList.remove("is-hidden");
+       partnerDot.className = color ? `breathe-partner-dot is-${color}` : "breathe-partner-dot";
 
-      const labels = {
-        timeout: "Partner is paused",
-        calm: "Partner is calming",
-        peace: "Partner is ready \u2713",
-      };
+       const labels = {
+         timeout: "Partner is paused",
+         calm: "Partner is calming",
+         peace: "Partner is ready \u2713",
+       };
 
-      partnerLabel.textContent = labels[eventName] || `Partner is ${color}`;
-    };
+       partnerLabel.textContent = labels[eventName] || `Partner is ${color}`;
+     };
+
+     // Show a temporary notification for partner events
+     modules.ui.showPartnerNotification = (message) => {
+       // Create notification element
+       const notification = document.createElement("div");
+       notification.className = "breathe-partner-notification";
+       notification.textContent = message;
+
+       // Style the notification
+       Object.assign(notification.style, {
+         position: "fixed",
+         top: "20px",
+         left: "50%",
+         transform: "translateX(-50%)",
+         backgroundColor: "rgba(0, 0, 0, 0.8)",
+         color: "white",
+         padding: "12px 24px",
+         borderRadius: "4px",
+         fontSize: "14px",
+         zIndex: "1000000",
+         pointerEvents: "none"
+       });
+
+       // Add to document
+       document.body.appendChild(notification);
+
+       // Remove after 3 seconds
+       setTimeout(() => {
+         if (notification.parentElement) {
+           notification.parentElement.removeChild(notification);
+         }
+       }, 3000);
+     };
 
     withGuard("status mount", () => {
       if (modules.status && modules.status.mountPanel) {

@@ -302,9 +302,14 @@
         return;
       }
 
-      if (payload.type === "SESSION_ENDED") {
-        setPartnerStatus(payload.color || partnerStatus, payload.event || "peace");
-      }
+       if (payload.type === "SESSION_ENDED") {
+         setPartnerStatus(payload.color || partnerStatus, payload.event || "peace");
+         
+         // Show a brief notification when partner ends a session
+         if (modules.ui && typeof modules.ui.showPartnerNotification === "function") {
+           modules.ui.showPartnerNotification(`Partner finished ${payload.event || "peace"} and is ready to connect`);
+         }
+       }
     };
 
     socket.onclose = () => {
