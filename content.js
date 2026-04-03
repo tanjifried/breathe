@@ -23,6 +23,8 @@
   let hasThemeListener = false;
   let hasPositionListener = false;
   let titleResetTimerId = null;
+  let partnerNotificationTimerId = null;
+  let partnerNotificationElement = null;
 
   function withGuard(taskName, fn) {
     try {
@@ -475,36 +477,30 @@
        partnerLabel.textContent = labels[eventName] || `Partner is ${color}`;
      };
 
-     // Show a temporary notification for partner events
      modules.ui.showPartnerNotification = (message) => {
-       // Create notification element
-       const notification = document.createElement("div");
-       notification.className = "breathe-partner-notification";
-       notification.textContent = message;
+       if (typeof message !== "string" || !message.trim()) {
+         return;
+       }
 
-       // Style the notification
-       Object.assign(notification.style, {
-         position: "fixed",
-         top: "20px",
-         left: "50%",
-         transform: "translateX(-50%)",
-         backgroundColor: "rgba(0, 0, 0, 0.8)",
-         color: "white",
-         padding: "12px 24px",
-         borderRadius: "4px",
-         fontSize: "14px",
-         zIndex: "1000000",
-         pointerEvents: "none"
-       });
+       if (partnerNotificationTimerId) {
+         window.clearTimeout(partnerNotificationTimerId);
+         partnerNotificationTimerId = null;
+       }
 
-       // Add to document
-       document.body.appendChild(notification);
+       if (!partnerNotificationElement || !partnerNotificationElement.isConnected) {
+         partnerNotificationElement = document.createElement("div");
+         partnerNotificationElement.className = "breathe-partner-notification";
+         document.body.appendChild(partnerNotificationElement);
+       }
 
-       // Remove after 3 seconds
-       setTimeout(() => {
-         if (notification.parentElement) {
-           notification.parentElement.removeChild(notification);
+       partnerNotificationElement.textContent = message;
+
+       partnerNotificationTimerId = window.setTimeout(() => {
+         if (partnerNotificationElement && partnerNotificationElement.parentElement) {
+           partnerNotificationElement.parentElement.removeChild(partnerNotificationElement);
          }
+         partnerNotificationElement = null;
+         partnerNotificationTimerId = null;
        }, 3000);
      };
 

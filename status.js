@@ -7,6 +7,7 @@
   const JWT_KEY = "breathe_jwt";
   const ALLOWED_STATUSES = ["green", "yellow", "red"];
   const MAX_RECONNECT_DELAY_MS = 30000;
+  const PARTNER_NOTIFICATION_DEDUPE_MS = 2500;
 
   let panelElement = null;
   let nudgeElement = null;
@@ -19,6 +20,8 @@
   let reconnectTimerId = null;
   let reconnectAttempt = 0;
   let hasStorageListener = false;
+  let lastPartnerNotificationKey = "";
+  let lastPartnerNotificationAt = 0;
 
   function getStorage() {
     if (typeof chrome === "undefined") {
@@ -29,6 +32,20 @@
 
   function isStatus(value) {
     return ALLOWED_STATUSES.includes(value);
+  }
+
+  function normalizePartnerEvent(value) {
+    return typeof value === "string" ? value.trim().toLowerCase() : "";
+  }
+
+  function getPartnerSessionEventLabel(eventName) {
+    const normalized = normalizePartnerEvent(eventName);
+    const labels = {
+      timeout: "a timeout",
+      calm: "a calm session",
+      peace: "a session",
+    };
+    return labels[normalized] || "a session";
   }
 
   function normalizeServerUrl(value) {
@@ -303,12 +320,25 @@
       }
 
        if (payload.type === "SESSION_ENDED") {
-         setPartnerStatus(payload.color || partnerStatus, payload.event || "peace");
-         
-         // Show a brief notification when partner ends a session
+         const eventName = normalizePartnerEvent(payload.event) || "peace";
+         setPartnerStatus(payload.color || partnerStatus, eventName);
+
          if (modules.ui && typeof modules.ui.showPartnerNotification === "function") {
-           modules.ui.showPartnerNotification(`Partner finished ${payload.event || "peace"} and is ready to connect`);
+           const eventLabel = getPartnerSessionEventLabel(eventName);
+           const notificationKey = `${payload.type}:${eventName}`;
+           const now = Date.now();
+           const recentlyNotified =
+             notificationKey === lastPartnerNotificationKey &&
+             now - lastPartnerNotificationAt < PARTNER_NOTIFICATION_DEDUPE_MS;
+
+           if (!recentlyNotified) {
+             modules.ui.showPartnerNotification(`Partner finished ${eventLabel} and is ready to connect`);
+             lastPartnerNotificationKey = notificationKey;
+             lastPartnerNotificationAt = now;
+           }
          }
+
+         return;
        }
     };
 
