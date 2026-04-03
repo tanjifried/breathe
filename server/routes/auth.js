@@ -78,6 +78,43 @@ router.post('/register', async (req, res) => {
   }
 });
 
+router.post('/login', async (req, res) => {
+  const { username, password } = req.body || {};
+
+  if (!username || !password) {
+    return res.status(400).json({
+      error: 'username and password are required'
+    });
+  }
+
+  const user = db
+    .prepare('SELECT id, username, password_hash FROM users WHERE username = ?')
+    .get(username.trim());
+
+  if (!user) {
+    return res.status(401).json({ error: 'Invalid credentials' });
+  }
+
+  try {
+    const passwordMatches = await bcrypt.compare(password, user.password_hash);
+
+    if (!passwordMatches) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const token = createToken(user.id);
+    return res.json({
+      token,
+      user: {
+        id: user.id,
+        username: user.username
+      }
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to log in user' });
+  }
+});
+
 router.post('/pair', authMiddleware, (req, res) => {
   const user = db
     .prepare('SELECT id, couple_id FROM users WHERE id = ?')

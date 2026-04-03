@@ -5,6 +5,8 @@ require('dotenv').config();
 require('./db/db');
 
 const { authMiddleware, router: authRoutes } = require('./routes/auth');
+const createCheckinsRouter = require('./routes/checkins');
+const createInsightsRouter = require('./routes/insights');
 const createStatusRouter = require('./routes/status');
 const createSessionsRouter = require('./routes/sessions');
 const SocketHub = require('./ws/hub');
@@ -22,6 +24,8 @@ app.get('/api/ping', (_req, res) => {
 });
 
 app.use('/api', authRoutes);
+app.use('/api', createCheckinsRouter(authMiddleware));
+app.use('/api', createInsightsRouter(authMiddleware));
 app.use('/api', createStatusRouter(authMiddleware, hub));
 app.use('/api', createSessionsRouter(authMiddleware, hub));
 
