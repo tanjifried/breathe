@@ -2,3 +2,7 @@ server/node_modules/
 server/data/
 server/.env
 *.log
+android/.gradle/
+android/build/
+android/local.properties
+android/app/build/
