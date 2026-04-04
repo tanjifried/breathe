@@ -17,13 +17,6 @@
   const saveMessage = document.getElementById("save-message");
   const positionGrid = document.getElementById("pos-grid");
   const resetPositionButton = document.getElementById("reset-pos-btn");
-  const authUsernameInput = document.getElementById("auth-username");
-  const authPasswordInput = document.getElementById("auth-password");
-  const authButton = document.getElementById("auth-btn");
-  const pairingCodeInput = document.getElementById("pairing-code");
-  const createCodeButton = document.getElementById("create-code-btn");
-  const joinCodeButton = document.getElementById("join-code-btn");
-  const generatedCodeElement = document.getElementById("generated-code");
 
   function getPositionButtons() {
     return Array.from(document.querySelectorAll(".pos-btn"));
@@ -119,218 +112,6 @@
     }
   }
 
-  function setGeneratedCode(value) {
-    if (!generatedCodeElement) {
-      return;
-    }
-
-    const safeValue = typeof value === "string" && value ? value : "Not created yet";
-    generatedCodeElement.textContent = safeValue;
-  }
-
-  function storageGet(storage, keys) {
-    return new Promise((resolve, reject) => {
-      try {
-        storage.get(keys, (result) => {
-          if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
-            reject(new Error(chrome.runtime.lastError.message || "Storage read failed"));
-            return;
-          }
-          resolve(result || {});
-        });
-      } catch (error) {
-        reject(error);
-      }
-    });
-  }
-
-  function storageSet(storage, payload) {
-    return new Promise((resolve, reject) => {
-      try {
-        storage.set(payload, () => {
-          if (typeof chrome !== "undefined" && chrome.runtime && chrome.runtime.lastError) {
-            reject(new Error(chrome.runtime.lastError.message || "Storage write failed"));
-            return;
-          }
-          resolve();
-        });
-      } catch (error) {
-        reject(error);
-      }
-    });
-  }
-
-  function validateServerUrlForApi() {
-    const serverUrl = normalizeServerUrl(serverUrlInput ? serverUrlInput.value : "");
-    if (!serverUrl || !isValidHttpUrl(serverUrl)) {
-      return null;
-    }
-    return serverUrl;
-  }
-
-  async function apiRequest(serverUrl, path, options) {
-    const response = await fetch(`${serverUrl}${path}`, options || {});
-    let payload = null;
-    try {
-      payload = await response.json();
-    } catch (_error) {
-      payload = null;
-    }
-
-    if (!response.ok) {
-      const message = payload && payload.error ? payload.error : `Request failed (${response.status})`;
-      throw new Error(message);
-    }
-
-    return payload || {};
-  }
-
-  async function getSavedServerAuth(storage) {
-    const data = await storageGet(storage, [SERVER_URL_KEY, JWT_KEY]);
-    const serverUrl = normalizeServerUrl(data[SERVER_URL_KEY]);
-    const token = typeof data[JWT_KEY] === "string" ? data[JWT_KEY].trim() : "";
-
-    if (!serverUrl || !isValidHttpUrl(serverUrl) || !token) {
-      return null;
-    }
-
-    return { serverUrl, token };
-  }
-
-  async function authenticateAndSave() {
-    const storage = getStorage();
-    if (!storage) {
-      setMessage("Storage is unavailable in this context.", "error");
-      return;
-    }
-
-    const serverUrl = validateServerUrlForApi();
-    if (!serverUrl) {
-      setMessage("Enter a valid server URL first.", "error");
-      return;
-    }
-
-    const username = (authUsernameInput && authUsernameInput.value ? authUsernameInput.value : "").trim();
-    const password = (authPasswordInput && authPasswordInput.value ? authPasswordInput.value : "").trim();
-
-    if (!username || password.length < 6) {
-      setMessage("Enter username and a password of at least 6 characters.", "error");
-      return;
-    }
-
-    try {
-      let payload = null;
-      try {
-        payload = await apiRequest(serverUrl, "/api/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username, password }),
-        });
-      } catch (error) {
-        if (error && error.message === "Username already exists") {
-          payload = await apiRequest(serverUrl, "/api/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, password }),
-          });
-        } else {
-          throw error;
-        }
-      }
-
-      const token = payload && typeof payload.token === "string" ? payload.token.trim() : "";
-      if (!token) {
-        throw new Error("Server did not return a token");
-      }
-
-      await storageSet(storage, {
-        [SERVER_URL_KEY]: serverUrl,
-        [JWT_KEY]: token,
-      });
-
-      if (jwtInput) {
-        jwtInput.value = token;
-      }
-
-      setMessage("Account connected. You can now create or join a partner code.", "success");
-    } catch (error) {
-      setMessage(error && error.message ? error.message : "Could not connect account.", "error");
-    }
-  }
-
-  async function createPairingCode() {
-    const storage = getStorage();
-    if (!storage) {
-      setMessage("Storage is unavailable in this context.", "error");
-      return;
-    }
-
-    try {
-      const config = await getSavedServerAuth(storage);
-      if (!config) {
-        setMessage("Sign in first so we can generate a pairing code.", "error");
-        return;
-      }
-
-      const payload = await apiRequest(config.serverUrl, "/api/pair", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${config.token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({}),
-      });
-
-      const pairingCode = payload && payload.pairingCode ? String(payload.pairingCode) : "";
-      if (!pairingCode) {
-        throw new Error("Server did not return a pairing code");
-      }
-
-      setGeneratedCode(pairingCode);
-      setMessage(`Share code ${pairingCode} with your partner.`, "success");
-    } catch (error) {
-      setMessage(error && error.message ? error.message : "Could not create pairing code.", "error");
-    }
-  }
-
-  async function joinWithPairingCode() {
-    const storage = getStorage();
-    if (!storage) {
-      setMessage("Storage is unavailable in this context.", "error");
-      return;
-    }
-
-    const pairingCode = (pairingCodeInput && pairingCodeInput.value ? pairingCodeInput.value : "")
-      .trim()
-      .replace(/\D/g, "");
-
-    if (!/^\d{6}$/.test(pairingCode)) {
-      setMessage("Enter a valid 6-digit partner code.", "error");
-      return;
-    }
-
-    try {
-      const config = await getSavedServerAuth(storage);
-      if (!config) {
-        setMessage("Sign in first before joining with a code.", "error");
-        return;
-      }
-
-      await apiRequest(config.serverUrl, "/api/join", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${config.token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ pairingCode }),
-      });
-
-      setMessage("Linked to your partner successfully.", "success");
-    } catch (error) {
-      setMessage(error && error.message ? error.message : "Could not join with that code.", "error");
-    }
-  }
-
   function loadSettings() {
     const storage = getStorage();
     if (!storage) {
@@ -352,7 +133,6 @@
       if (timeoutDurationInput) {
         timeoutDurationInput.value = result && result[TIMEOUT_DURATION_KEY] ? result[TIMEOUT_DURATION_KEY] : "20";
       }
-      setGeneratedCode("");
     });
 
     storage.get([POSITION_KEY], (result) => {
@@ -414,15 +194,6 @@
 
   if (form) {
     form.addEventListener("submit", saveSettings);
-  }
-  if (authButton) {
-    authButton.addEventListener("click", authenticateAndSave);
-  }
-  if (createCodeButton) {
-    createCodeButton.addEventListener("click", createPairingCode);
-  }
-  if (joinCodeButton) {
-    joinCodeButton.addEventListener("click", joinWithPairingCode);
   }
   loadSettings();
 })();

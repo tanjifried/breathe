@@ -25,14 +25,6 @@ const parseAuthHeader = (authHeader) => {
   return authHeader.slice('Bearer '.length);
 };
 
-const normalizeUserId = (value) => {
-  const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed <= 0) {
-    return null;
-  }
-  return parsed;
-};
-
 const authMiddleware = (req, res, next) => {
   const token = parseAuthHeader(req.header('Authorization'));
 
@@ -42,11 +34,7 @@ const authMiddleware = (req, res, next) => {
 
   try {
     const payload = jwt.verify(token, JWT_SECRET);
-    const userId = normalizeUserId(payload.userId);
-    if (!userId) {
-      return res.status(401).json({ error: 'Invalid or expired token' });
-    }
-    req.userId = userId;
+    req.userId = payload.userId;
     return next();
   } catch (err) {
     return res.status(401).json({ error: 'Invalid or expired token' });
@@ -109,6 +97,7 @@ router.post('/login', async (req, res) => {
 
   try {
     const passwordMatches = await bcrypt.compare(password, user.password_hash);
+
     if (!passwordMatches) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }

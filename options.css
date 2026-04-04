@@ -159,59 +159,6 @@ textarea {
   color: var(--options-text-muted);
 }
 
-.quick-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.quick-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 12px;
-  flex-wrap: wrap;
-}
-
-.secondary-btn {
-  border: 1px solid var(--options-border);
-  background: #ffffff;
-  color: var(--options-text);
-  border-radius: 10px;
-  padding: 10px 14px;
-  font-size: 14px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: border-color 0.2s, color 0.2s, background 0.2s;
-}
-
-.secondary-btn:hover {
-  border-color: var(--options-accent);
-  color: var(--options-accent);
-  background: #f7fbf9;
-}
-
-.pairing-grid {
-  margin-top: 12px;
-}
-
-.pairing-code-display {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-}
-
-.code-pill {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: 0 12px;
-  border-radius: 10px;
-  border: 1px solid var(--options-border);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  background: #ffffff;
-}
-
 .pos-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -312,10 +259,4 @@ button[type="submit"]:hover {
 
 #save-message.is-success {
   color: var(--options-accent);
-}
-
-@media (max-width: 640px) {
-  .quick-grid {
-    grid-template-columns: 1fr;
-  }
 }

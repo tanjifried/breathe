@@ -6,14 +6,6 @@ const VALID_FEATURES = new Set(['calm', 'timeout']);
 const TEN_MINUTES_MS = 10 * 60 * 1000;
 const TWENTY_MINUTES_MS = 20 * 60 * 1000;
 
-const normalizeUserId = (value) => {
-  const parsed = Number(value);
-  if (!Number.isInteger(parsed) || parsed <= 0) {
-    return null;
-  }
-  return parsed;
-};
-
 const parseMood = (value) => {
   if (value === undefined || value === null || value === '') {
     return null;
@@ -42,20 +34,15 @@ const getCoupleContext = (userId) =>
     .get(userId);
 
 const getPartnerId = (context, userId) => {
-  const normalizedUserId = normalizeUserId(userId);
-  if (!normalizedUserId || !context || !context.couple_id) {
+  if (!context || !context.couple_id) {
     return null;
   }
 
-  if (context.partner_a_id === normalizedUserId) {
+  if (context.partner_a_id === userId) {
     return context.partner_b_id || null;
   }
 
-  if (context.partner_b_id === normalizedUserId) {
-    return context.partner_a_id || null;
-  }
-
-  return null;
+  return context.partner_a_id || null;
 };
 
 const isLocked = (coolingUntil) => {

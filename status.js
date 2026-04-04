@@ -319,27 +319,27 @@
         return;
       }
 
-      if (payload.type === "SESSION_ENDED") {
-        const eventName = normalizePartnerEvent(payload.event) || "peace";
-        setPartnerStatus(payload.color || partnerStatus, eventName);
+       if (payload.type === "SESSION_ENDED") {
+         const eventName = normalizePartnerEvent(payload.event) || "peace";
+         setPartnerStatus(payload.color || partnerStatus, eventName);
 
-        if (modules.ui && typeof modules.ui.showPartnerNotification === "function") {
-          const eventLabel = getPartnerSessionEventLabel(eventName);
-          const notificationKey = `${payload.type}:${eventName}`;
-          const now = Date.now();
-          const recentlyNotified =
-            notificationKey === lastPartnerNotificationKey &&
-            now - lastPartnerNotificationAt < PARTNER_NOTIFICATION_DEDUPE_MS;
+         if (modules.ui && typeof modules.ui.showPartnerNotification === "function") {
+           const eventLabel = getPartnerSessionEventLabel(eventName);
+           const notificationKey = `${payload.type}:${eventName}`;
+           const now = Date.now();
+           const recentlyNotified =
+             notificationKey === lastPartnerNotificationKey &&
+             now - lastPartnerNotificationAt < PARTNER_NOTIFICATION_DEDUPE_MS;
 
-          if (!recentlyNotified) {
-            modules.ui.showPartnerNotification(`Partner finished ${eventLabel} and is ready to connect`);
-            lastPartnerNotificationKey = notificationKey;
-            lastPartnerNotificationAt = now;
-          }
-        }
+           if (!recentlyNotified) {
+             modules.ui.showPartnerNotification(`Partner finished ${eventLabel} and is ready to connect`);
+             lastPartnerNotificationKey = notificationKey;
+             lastPartnerNotificationAt = now;
+           }
+         }
 
-        return;
-      }
+         return;
+       }
     };
 
     socket.onclose = () => {

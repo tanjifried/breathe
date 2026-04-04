@@ -477,32 +477,32 @@
        partnerLabel.textContent = labels[eventName] || `Partner is ${color}`;
      };
 
-    modules.ui.showPartnerNotification = (message) => {
-      if (typeof message !== "string" || !message.trim()) {
-        return;
-      }
+     modules.ui.showPartnerNotification = (message) => {
+       if (typeof message !== "string" || !message.trim()) {
+         return;
+       }
 
-      if (partnerNotificationTimerId) {
-        window.clearTimeout(partnerNotificationTimerId);
-        partnerNotificationTimerId = null;
-      }
+       if (partnerNotificationTimerId) {
+         window.clearTimeout(partnerNotificationTimerId);
+         partnerNotificationTimerId = null;
+       }
 
-      if (!partnerNotificationElement || !partnerNotificationElement.isConnected) {
-        partnerNotificationElement = document.createElement("div");
-        partnerNotificationElement.className = "breathe-partner-notification";
-        document.body.appendChild(partnerNotificationElement);
-      }
+       if (!partnerNotificationElement || !partnerNotificationElement.isConnected) {
+         partnerNotificationElement = document.createElement("div");
+         partnerNotificationElement.className = "breathe-partner-notification";
+         document.body.appendChild(partnerNotificationElement);
+       }
 
-      partnerNotificationElement.textContent = message;
+       partnerNotificationElement.textContent = message;
 
-      partnerNotificationTimerId = window.setTimeout(() => {
-        if (partnerNotificationElement && partnerNotificationElement.parentElement) {
-          partnerNotificationElement.parentElement.removeChild(partnerNotificationElement);
-        }
-        partnerNotificationElement = null;
-        partnerNotificationTimerId = null;
-      }, 3000);
-    };
+       partnerNotificationTimerId = window.setTimeout(() => {
+         if (partnerNotificationElement && partnerNotificationElement.parentElement) {
+           partnerNotificationElement.parentElement.removeChild(partnerNotificationElement);
+         }
+         partnerNotificationElement = null;
+         partnerNotificationTimerId = null;
+       }, 3000);
+     };
 
     withGuard("status mount", () => {
       if (modules.status && modules.status.mountPanel) {
