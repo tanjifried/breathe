@@ -4,6 +4,7 @@ import com.breathe.data.model.CheckinsResponse
 import com.breathe.data.model.EndSessionRequest
 import com.breathe.data.model.MoodCheckinRequest
 import com.breathe.data.model.MoodCheckinResponse
+import com.breathe.data.model.PeaceSignalResponse
 import com.breathe.data.model.ReentryLockResponse
 import com.breathe.data.model.SessionSummaryResponse
 import com.breathe.data.model.StartSessionRequest
@@ -20,6 +21,9 @@ interface SessionApi {
 
   @POST("api/sessions/end")
   suspend fun endSession(@Body request: EndSessionRequest): SessionSummaryResponse
+
+  @POST("api/sessions/peace")
+  suspend fun sendPeace(): PeaceSignalResponse
 
   @GET("api/reentry-lock")
   suspend fun getReentryLock(): ReentryLockResponse

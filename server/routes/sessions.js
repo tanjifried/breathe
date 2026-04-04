@@ -244,6 +244,31 @@ const createSessionsRouter = (authMiddleware, hub) => {
     });
   });
 
+  router.post('/sessions/peace', authMiddleware, (req, res) => {
+    const context = getCoupleContext(req.userId);
+
+    if (!context) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (!context.couple_id) {
+      return res.status(400).json({ error: 'User must be paired' });
+    }
+
+    const partnerId = getPartnerId(context, req.userId);
+    const sentAt = new Date().toISOString();
+
+    if (partnerId) {
+      hub.sendToUser(partnerId, {
+        type: 'PEACE_SIGNAL',
+        userId: req.userId,
+        sentAt
+      });
+    }
+
+    return res.status(201).json({ ok: true, sentAt, partnerReached: Boolean(partnerId) });
+  });
+
   router.get('/reentry-lock', authMiddleware, (req, res) => {
     const context = getCoupleContext(req.userId);
     if (!context) {

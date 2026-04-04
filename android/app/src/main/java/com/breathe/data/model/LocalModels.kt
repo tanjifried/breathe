@@ -38,3 +38,14 @@ data class VoiceEntity(
   val durationSeconds: Int? = null,
   val uploadedAt: String
 )
+
+@Entity(tableName = "quick_updates")
+data class QuickUpdateEntity(
+  @PrimaryKey val updateId: Long,
+  val senderUserId: Long,
+  val presetKey: String,
+  val message: String,
+  val note: String? = null,
+  val createdAt: String,
+  val isOwn: Boolean = false
+)

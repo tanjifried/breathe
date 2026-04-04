@@ -87,6 +87,12 @@ data class ReentryLockResponse(
   val until: String? = null
 )
 
+data class PeaceSignalResponse(
+  val ok: Boolean,
+  val sentAt: String,
+  val partnerReached: Boolean
+)
+
 data class MoodCheckinRequest(
   val mood: Int
 )
@@ -133,6 +139,26 @@ data class WeeklyInsightsResponse(
   val moodTrend: MoodTrendResponse = MoodTrendResponse(),
   val patterns: List<String> = emptyList(),
   val recommendations: List<String> = emptyList()
+)
+
+data class QuickUpdateRequest(
+  val presetKey: String,
+  val message: String,
+  val note: String? = null
+)
+
+data class QuickUpdateResponse(
+  val updateId: Long,
+  val senderUserId: Long,
+  val presetKey: String,
+  val message: String,
+  val note: String? = null,
+  val createdAt: String
+)
+
+data class QuickUpdatesResponse(
+  val entries: List<QuickUpdateResponse> = emptyList(),
+  val total: Int = 0
 )
 
 data class VoiceFileResponse(

@@ -1,14 +1,8 @@
 package com.breathe.presentation.ui.timeout
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -18,11 +12,11 @@ import com.breathe.domain.model.TimeoutLock
 import com.breathe.domain.repository.SessionRepository
 import com.breathe.domain.usecase.EndSessionUseCase
 import com.breathe.domain.usecase.StartSessionUseCase
-import com.breathe.presentation.theme.BreatheAccentStrong
-import com.breathe.presentation.theme.BreatheCanvas
 import com.breathe.presentation.ui.common.AppScreen
 import com.breathe.presentation.ui.common.BreatheCard
+import com.breathe.presentation.ui.common.HeroCard
 import com.breathe.presentation.ui.common.MiniStat
+import com.breathe.presentation.ui.common.PrimaryActionButton
 import com.breathe.presentation.ui.common.SectionTitle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -61,7 +55,7 @@ class TimeoutViewModel @Inject constructor(
       sessionRepository.observeTimeoutLock().collect { lock ->
         countdownJob?.cancel()
         _uiState.value = lock.toUiState()
-        if (lock.sessionId != null && lock.isLocked) {
+        if (lock.isLocked) {
           startCountdown(lock.sessionId, lock.secondsRemaining)
         }
       }
@@ -74,21 +68,21 @@ class TimeoutViewModel @Inject constructor(
     }
   }
 
-  private fun startCountdown(sessionId: Long, initialSeconds: Int) {
+  private fun startCountdown(sessionId: Long?, initialSeconds: Int) {
     countdownJob = viewModelScope.launch {
       var remaining = initialSeconds
       while (remaining > 0) {
         delay(1_000)
         remaining -= 1
         _uiState.update {
-          if (it.sessionId == sessionId) {
+          if (sessionId == null || it.sessionId == sessionId || it.sessionId == null) {
             it.copy(secondsRemaining = remaining.coerceAtLeast(0), isLocked = remaining > 0)
           } else {
             it
           }
         }
       }
-      endSessionUseCase(sessionId)
+      sessionId?.let { endSessionUseCase(it) }
     }
   }
 
@@ -108,29 +102,40 @@ fun TimeoutScreen(viewModel: TimeoutViewModel = hiltViewModel()) {
     title = "Structured timeout",
     subtitle = "A hard pause for your body first, problem-solving later."
   ) {
+    HeroCard(
+      eyebrow = "Protective boundary",
+      title = if (uiState.isLocked) formatTimeout(uiState.secondsRemaining) else "No timeout is active.",
+      body = if (uiState.isLocked) {
+        "Containment is the goal here. Let the timer hold the line so you do not have to negotiate it mid-activation."
+      } else {
+        "Use timeout when the body is too activated for repair and you need a real re-entry boundary."
+      }
+    )
+
     BreatheCard {
-      Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        SectionTitle("Lock state")
-        MiniStat("Locked", if (uiState.isLocked) "Yes" else "No")
-        MiniStat("Seconds remaining", uiState.secondsRemaining.toString())
-        MiniStat("Unlocks at", uiState.unlocksAt ?: "Not active")
+      SectionTitle("Lock state")
+      MiniStat("Locked", if (uiState.isLocked) "Yes" else "No")
+      MiniStat("Time remaining", formatTimeout(uiState.secondsRemaining))
+      MiniStat("Unlocks at", uiState.unlocksAt ?: "Not active")
+      if (!uiState.isLocked && uiState.sessionId != null) {
+        Text("The re-entry window is open. Keep the first message short, slow, and concrete.")
       }
     }
 
     BreatheCard {
-      Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SectionTitle("Actions")
-        Button(
-          onClick = { viewModel.onEvent(TimeoutUiEvent.StartTimeout) },
-          enabled = !uiState.isLocked,
-          colors = ButtonDefaults.buttonColors(containerColor = BreatheAccentStrong, contentColor = BreatheCanvas)
-        ) {
-          Text(if (uiState.isLocked) "Timeout in progress" else "Start timeout")
-        }
-        if (!uiState.isLocked && uiState.sessionId != null) {
-          Text("Re-entry window is open. Move slowly before restarting a timeout.")
-        }
-      }
+      SectionTitle("Actions")
+      PrimaryActionButton(
+        text = if (uiState.isLocked) "Timeout in progress" else "Start timeout",
+        onClick = { viewModel.onEvent(TimeoutUiEvent.StartTimeout) },
+        enabled = !uiState.isLocked
+      )
     }
   }
+}
+
+private fun formatTimeout(seconds: Int): String {
+  val safeSeconds = seconds.coerceAtLeast(0)
+  val minutes = safeSeconds / 60
+  val remainder = safeSeconds % 60
+  return "%02d:%02d".format(minutes, remainder)
 }

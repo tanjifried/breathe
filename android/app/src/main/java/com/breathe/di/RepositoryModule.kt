@@ -3,12 +3,14 @@ package com.breathe.di
 import com.breathe.data.repository.AuthRepositoryImpl
 import com.breathe.data.repository.InsightsRepositoryImpl
 import com.breathe.data.repository.MoodRepositoryImpl
+import com.breathe.data.repository.QuickUpdateRepositoryImpl
 import com.breathe.data.repository.SessionRepositoryImpl
 import com.breathe.data.repository.StatusRepositoryImpl
 import com.breathe.data.repository.VoiceRepositoryImpl
 import com.breathe.domain.repository.AuthRepository
 import com.breathe.domain.repository.InsightsRepository
 import com.breathe.domain.repository.MoodRepository
+import com.breathe.domain.repository.QuickUpdateRepository
 import com.breathe.domain.repository.SessionRepository
 import com.breathe.domain.repository.StatusRepository
 import com.breathe.domain.repository.VoiceRepository
@@ -37,4 +39,7 @@ abstract class RepositoryModule {
 
   @Binds
   abstract fun bindInsightsRepository(impl: InsightsRepositoryImpl): InsightsRepository
+
+  @Binds
+  abstract fun bindQuickUpdateRepository(impl: QuickUpdateRepositoryImpl): QuickUpdateRepository
 }

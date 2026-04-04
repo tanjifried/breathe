@@ -7,10 +7,12 @@ require('./db/db');
 const { authMiddleware, router: authRoutes } = require('./routes/auth');
 const createCheckinsRouter = require('./routes/checkins');
 const createInsightsRouter = require('./routes/insights');
+const createQuickUpdatesRouter = require('./routes/quick-updates');
 const createStatusRouter = require('./routes/status');
 const createSessionsRouter = require('./routes/sessions');
 const SocketHub = require('./ws/hub');
 
+const HOST = process.env.HOST || '0.0.0.0';
 const PORT = Number(process.env.PORT || 3000);
 
 const app = express();
@@ -26,6 +28,7 @@ app.get('/api/ping', (_req, res) => {
 app.use('/api', authRoutes);
 app.use('/api', createCheckinsRouter(authMiddleware));
 app.use('/api', createInsightsRouter(authMiddleware));
+app.use('/api', createQuickUpdatesRouter(authMiddleware, hub));
 app.use('/api', createStatusRouter(authMiddleware, hub));
 app.use('/api', createSessionsRouter(authMiddleware, hub));
 
@@ -43,6 +46,6 @@ server.on('upgrade', (request, socket, head) => {
   hub.handleUpgrade(request, socket, head);
 });
 
-server.listen(PORT, () => {
-  console.log(`Breathe server listening on port ${PORT}`);
+server.listen(PORT, HOST, () => {
+  console.log(`Breathe server listening on ${HOST}:${PORT}`);
 });

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.breathe.data.local.BreatheDatabase
 import com.breathe.data.local.dao.MoodDao
+import com.breathe.data.local.dao.QuickUpdateDao
 import com.breathe.data.local.dao.SessionDao
 import com.breathe.data.local.dao.StatusDao
 import com.breathe.data.local.dao.VoiceDao
@@ -35,4 +36,7 @@ object DatabaseModule {
 
   @Provides
   fun provideVoiceDao(database: BreatheDatabase): VoiceDao = database.voiceDao()
+
+  @Provides
+  fun provideQuickUpdateDao(database: BreatheDatabase): QuickUpdateDao = database.quickUpdateDao()
 }

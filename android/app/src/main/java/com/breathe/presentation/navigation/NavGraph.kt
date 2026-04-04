@@ -22,6 +22,8 @@ import com.breathe.presentation.ui.status.StatusScreen
 import com.breathe.presentation.ui.status.StatusViewModel
 import com.breathe.presentation.ui.timeout.TimeoutScreen
 import com.breathe.presentation.ui.timeout.TimeoutViewModel
+import com.breathe.presentation.ui.updates.QuickUpdatesScreen
+import com.breathe.presentation.ui.updates.QuickUpdatesViewModel
 import com.breathe.presentation.ui.voice.VoiceStudioScreen
 import com.breathe.presentation.ui.voice.VoiceViewModel
 
@@ -73,6 +75,10 @@ fun BreatheNavGraph() {
 
     composable(Screen.Status.route) {
       StatusScreen(viewModel = hiltViewModel<StatusViewModel>())
+    }
+
+    composable(Screen.Updates.route) {
+      QuickUpdatesScreen(viewModel = hiltViewModel<QuickUpdatesViewModel>())
     }
 
     composable(Screen.Voice.route) {

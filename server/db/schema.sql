@@ -63,8 +63,21 @@ CREATE TABLE IF NOT EXISTS voice_files (
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+CREATE TABLE IF NOT EXISTS quick_updates (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  couple_id INTEGER NOT NULL,
+  sender_user_id INTEGER NOT NULL,
+  preset_key TEXT NOT NULL,
+  message TEXT NOT NULL,
+  note TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  FOREIGN KEY (couple_id) REFERENCES couples(id),
+  FOREIGN KEY (sender_user_id) REFERENCES users(id)
+);
+
 CREATE INDEX IF NOT EXISTS idx_users_couple_id ON users(couple_id);
 CREATE INDEX IF NOT EXISTS idx_couples_pairing_code ON couples(pairing_code);
 CREATE INDEX IF NOT EXISTS idx_status_user_id ON status(user_id);
 CREATE INDEX IF NOT EXISTS idx_conflict_log_couple_id ON conflict_log(couple_id);
 CREATE INDEX IF NOT EXISTS idx_checkins_user_id ON checkins(user_id);
+CREATE INDEX IF NOT EXISTS idx_quick_updates_couple_id ON quick_updates(couple_id);

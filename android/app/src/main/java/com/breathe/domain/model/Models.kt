@@ -99,3 +99,12 @@ data class WeeklyInsights(
   val topFeature: String? = null,
   val recommendations: List<String> = emptyList()
 )
+
+data class QuickUpdate(
+  val updateId: Long,
+  val presetKey: String,
+  val message: String,
+  val note: String? = null,
+  val createdAt: String,
+  val isOwn: Boolean = false
+)

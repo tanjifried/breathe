@@ -6,6 +6,8 @@ plugins {
   id("com.google.dagger.hilt.android")
 }
 
+val breatheServerUrl = System.getenv("BREATHE_SERVER_URL") ?: "http://10.0.2.2:3000/"
+
 android {
   namespace = "com.breathe"
   compileSdk = 35
@@ -14,11 +16,11 @@ android {
     applicationId = "com.breathe"
     minSdk = 29
     targetSdk = 35
-    versionCode = 2
-    versionName = "0.1.1-dev"
+    versionCode = 3
+    versionName = "0.2.0-dev"
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-    buildConfigField("String", "DEFAULT_SERVER_URL", "\"http://10.0.2.2:3000/\"")
+    buildConfigField("String", "DEFAULT_SERVER_URL", "\"$breatheServerUrl\"")
   }
 
   buildTypes {

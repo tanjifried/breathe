@@ -2,7 +2,9 @@ package com.breathe.di
 
 import com.breathe.BuildConfig
 import com.breathe.data.remote.AuthInterceptor
+import com.breathe.data.remote.DynamicBaseUrlInterceptor
 import com.breathe.data.remote.api.AuthApi
+import com.breathe.data.remote.api.QuickUpdateApi
 import com.breathe.data.remote.api.SessionApi
 import com.breathe.data.remote.api.StatusApi
 import com.breathe.data.remote.api.VoiceApi
@@ -34,13 +36,17 @@ object AppModule {
 
   @Provides
   @Singleton
-  fun provideOkHttpClient(authInterceptor: Interceptor): OkHttpClient {
+  fun provideOkHttpClient(
+    authInterceptor: Interceptor,
+    dynamicBaseUrlInterceptor: DynamicBaseUrlInterceptor
+  ): OkHttpClient {
     val logger = HttpLoggingInterceptor().apply {
       level = HttpLoggingInterceptor.Level.BASIC
     }
 
     return OkHttpClient.Builder()
       .pingInterval(25, TimeUnit.SECONDS)
+      .addInterceptor(dynamicBaseUrlInterceptor)
       .addInterceptor(authInterceptor)
       .addInterceptor(logger)
       .build()
@@ -70,4 +76,8 @@ object AppModule {
   @Provides
   @Singleton
   fun provideVoiceApi(retrofit: Retrofit): VoiceApi = retrofit.create(VoiceApi::class.java)
+
+  @Provides
+  @Singleton
+  fun provideQuickUpdateApi(retrofit: Retrofit): QuickUpdateApi = retrofit.create(QuickUpdateApi::class.java)
 }

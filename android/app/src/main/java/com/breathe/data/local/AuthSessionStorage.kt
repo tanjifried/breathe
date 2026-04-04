@@ -38,6 +38,8 @@ class AuthSessionStorage @Inject constructor(
 
   fun token(): String? = state.value.token?.takeIf { it.isNotBlank() }
 
+  fun userId(): Long? = state.value.userId
+
   fun serverUrl(): String = state.value.serverUrl.ifBlank { BuildConfig.DEFAULT_SERVER_URL }
 
   fun saveRegistration(response: RegisterResponse) {
