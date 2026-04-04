@@ -1,10 +1,13 @@
 package com.breathe.presentation.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.breathe.presentation.ui.calm.CalmScreen
 import com.breathe.presentation.ui.calm.CalmViewModel
 import com.breathe.presentation.ui.home.HomeScreen
@@ -25,11 +28,27 @@ import com.breathe.presentation.ui.voice.VoiceViewModel
 @Composable
 fun BreatheNavGraph() {
   val navController = rememberNavController()
+  val appEntryViewModel = hiltViewModel<AppEntryViewModel>()
+  val appEntryState by appEntryViewModel.uiState.collectAsStateWithLifecycle()
 
   NavHost(
     navController = navController,
-    startDestination = Screen.Pairing.route
+    startDestination = Screen.Loading.route
   ) {
+    composable(Screen.Loading.route) {
+      LaunchedEffect(appEntryState.isLoading, appEntryState.targetRoute) {
+        val targetRoute = appEntryState.targetRoute
+        if (!appEntryState.isLoading && targetRoute != null) {
+          navController.navigate(targetRoute) {
+            popUpTo(Screen.Loading.route) { inclusive = true }
+            launchSingleTop = true
+          }
+        }
+      }
+
+      LoadingScreen()
+    }
+
     composable(Screen.Pairing.route) {
       PairingScreen(
         viewModel = hiltViewModel<PairingViewModel>(),

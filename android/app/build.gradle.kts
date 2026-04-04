@@ -14,8 +14,8 @@ android {
     applicationId = "com.breathe"
     minSdk = 29
     targetSdk = 35
-    versionCode = 1
-    versionName = "0.1.0"
+    versionCode = 2
+    versionName = "0.1.1-dev"
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
     buildConfigField("String", "DEFAULT_SERVER_URL", "\"http://10.0.2.2:3000/\"")

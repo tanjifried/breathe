@@ -1,21 +1,18 @@
 package com.breathe.presentation.theme
 
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
 private val LightColors = lightColorScheme(
-  primary = BreatheBlue,
-  secondary = BreatheMint,
-  surface = BreatheSoft,
-  onPrimary = BreatheSoft,
+  primary = BreatheAccent,
+  secondary = BreatheGreen,
+  tertiary = BreatheYellow,
+  background = BreatheCanvas,
+  surface = BreatheCardSurface,
+  surfaceVariant = BreatheOverlay,
+  onPrimary = BreatheCanvas,
   onSurface = BreatheInk
-)
-
-private val DarkColors = darkColorScheme(
-  primary = BreatheMint,
-  secondary = BreatheBlue
 )
 
 @Composable

@@ -1,11 +1,11 @@
 package com.breathe.presentation.ui.pair
 
+import com.breathe.BuildConfig
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -20,10 +20,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.breathe.domain.usecase.BootstrapSessionUseCase
+import com.breathe.domain.usecase.ContinueOfflineUseCase
 import com.breathe.domain.usecase.CreatePairingCodeUseCase
 import com.breathe.domain.usecase.JoinPairUseCase
 import com.breathe.domain.usecase.LoginUseCase
 import com.breathe.domain.usecase.RegisterAccountUseCase
+import com.breathe.presentation.theme.BreatheAccentStrong
+import com.breathe.presentation.theme.BreatheCanvas
+import com.breathe.presentation.ui.common.AppScreen
+import com.breathe.presentation.ui.common.BreatheCard
+import com.breathe.presentation.ui.common.SectionTitle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -42,6 +48,7 @@ data class PairingUiState(
   val joinCode: String = "",
   val isRegistered: Boolean = false,
   val isPaired: Boolean = false,
+  val isOfflineMode: Boolean = false,
   val isLoading: Boolean = false,
   val error: String? = null
 )
@@ -50,6 +57,7 @@ sealed interface PairingUiEvent {
   data class UsernameChanged(val value: String) : PairingUiEvent
   data class PasswordChanged(val value: String) : PairingUiEvent
   data class JoinCodeChanged(val value: String) : PairingUiEvent
+  data object ContinueOffline : PairingUiEvent
   data object RegisterAccount : PairingUiEvent
   data object SignIn : PairingUiEvent
   data object CreatePairingCode : PairingUiEvent
@@ -60,6 +68,7 @@ sealed interface PairingUiEvent {
 @HiltViewModel
 class PairingViewModel @Inject constructor(
   private val bootstrapSessionUseCase: BootstrapSessionUseCase,
+  private val continueOfflineUseCase: ContinueOfflineUseCase,
   private val registerAccountUseCase: RegisterAccountUseCase,
   private val loginUseCase: LoginUseCase,
   private val createPairingCodeUseCase: CreatePairingCodeUseCase,
@@ -70,17 +79,14 @@ class PairingViewModel @Inject constructor(
 
   init {
     viewModelScope.launch {
-      bootstrapSessionUseCase.bootstrap()
-    }
-
-    viewModelScope.launch {
       bootstrapSessionUseCase().collect { session ->
         _uiState.update {
           it.copy(
             pairingCode = session.pairingCode.orEmpty(),
             pairingExpiresAt = session.pairingExpiresAt,
             isRegistered = session.hasToken,
-            isPaired = session.isPaired
+            isPaired = session.isPaired,
+            isOfflineMode = session.isOfflineMode
           )
         }
       }
@@ -101,6 +107,7 @@ class PairingViewModel @Inject constructor(
         _uiState.update { it.copy(joinCode = event.value, error = null) }
       }
 
+      PairingUiEvent.ContinueOffline -> submitContinueOffline()
       PairingUiEvent.RegisterAccount -> submitRegistration()
       PairingUiEvent.SignIn -> submitLogin()
       PairingUiEvent.CreatePairingCode -> submitCreatePairingCode()
@@ -179,6 +186,18 @@ class PairingViewModel @Inject constructor(
     }
   }
 
+  private fun submitContinueOffline() {
+    viewModelScope.launch {
+      setLoading(true)
+      runCatching {
+        continueOfflineUseCase()
+      }.onFailure { error ->
+        _uiState.update { it.copy(error = error.toUserMessage()) }
+      }
+      setLoading(false)
+    }
+  }
+
   private fun submitJoinPair() {
     if (!_uiState.value.isRegistered) {
       _uiState.update { it.copy(error = "Create your private account first.") }
@@ -221,78 +240,94 @@ fun PairingScreen(
 ) {
   val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-  LaunchedEffect(uiState.isPaired, uiState.pairingCode) {
-    if (uiState.isPaired && uiState.pairingCode.isBlank()) {
+  LaunchedEffect(uiState.isPaired, uiState.pairingCode, uiState.isOfflineMode) {
+    if (uiState.isOfflineMode || (uiState.isPaired && uiState.pairingCode.isBlank())) {
       onContinue()
     }
   }
 
-  Column(
-    modifier = Modifier
-      .fillMaxSize()
-      .padding(24.dp),
-    verticalArrangement = Arrangement.spacedBy(16.dp)
+  AppScreen(
+    title = "Pair while calm",
+    subtitle = "Set up trust before conflict. Use a private account, a pairing code, or continue offline while features are still under construction."
   ) {
-    Text("Pair while calm", style = MaterialTheme.typography.headlineMedium)
-    Text("Create a private account on your self-hosted server, then generate or join a pairing code before conflict starts.")
+    BreatheCard {
+      Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionTitle("Private account")
+        OutlinedTextField(
+          modifier = Modifier.fillMaxWidth(),
+          value = uiState.username,
+          onValueChange = { viewModel.onEvent(PairingUiEvent.UsernameChanged(it)) },
+          label = { Text("Username") }
+        )
 
-    OutlinedTextField(
-      modifier = Modifier.fillMaxWidth(),
-      value = uiState.username,
-      onValueChange = { viewModel.onEvent(PairingUiEvent.UsernameChanged(it)) },
-      label = { Text("Username") }
-    )
+        OutlinedTextField(
+          modifier = Modifier.fillMaxWidth(),
+          value = uiState.password,
+          onValueChange = { viewModel.onEvent(PairingUiEvent.PasswordChanged(it)) },
+          label = { Text("Password") }
+        )
 
-    OutlinedTextField(
-      modifier = Modifier.fillMaxWidth(),
-      value = uiState.password,
-      onValueChange = { viewModel.onEvent(PairingUiEvent.PasswordChanged(it)) },
-      label = { Text("Password") }
-    )
+        Button(
+          onClick = { viewModel.onEvent(PairingUiEvent.RegisterAccount) },
+          enabled = !uiState.isLoading && !uiState.isRegistered,
+          colors = ButtonDefaults.buttonColors(containerColor = BreatheAccentStrong, contentColor = BreatheCanvas)
+        ) {
+          Text(if (uiState.isRegistered) "Account ready" else "Create private account")
+        }
 
-    Button(
-      onClick = { viewModel.onEvent(PairingUiEvent.RegisterAccount) },
-      enabled = !uiState.isLoading && !uiState.isRegistered
-    ) {
-      Text(if (uiState.isRegistered) "Account ready" else "Create private account")
+        Button(
+          onClick = { viewModel.onEvent(PairingUiEvent.SignIn) },
+          enabled = !uiState.isLoading && !uiState.isRegistered
+        ) {
+          Text("Sign in")
+        }
+
+        if (BuildConfig.DEBUG) {
+          Button(
+            onClick = { viewModel.onEvent(PairingUiEvent.ContinueOffline) },
+            enabled = !uiState.isLoading
+          ) {
+            Text("Continue offline")
+          }
+        }
+      }
     }
 
-    Button(
-      onClick = { viewModel.onEvent(PairingUiEvent.SignIn) },
-      enabled = !uiState.isLoading && !uiState.isRegistered
-    ) {
-      Text("Sign in")
-    }
+    BreatheCard {
+      Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionTitle("Pairing code")
+        Button(
+          onClick = { viewModel.onEvent(PairingUiEvent.CreatePairingCode) },
+          enabled = !uiState.isLoading && uiState.isRegistered,
+          colors = ButtonDefaults.buttonColors(containerColor = BreatheAccentStrong, contentColor = BreatheCanvas)
+        ) {
+          Text(if (uiState.pairingCode.isBlank()) "Create pairing code" else "Refresh pairing code")
+        }
 
-    Button(
-      onClick = { viewModel.onEvent(PairingUiEvent.CreatePairingCode) },
-      enabled = !uiState.isLoading && uiState.isRegistered
-    ) {
-      Text(if (uiState.pairingCode.isBlank()) "Create pairing code" else "Refresh pairing code")
-    }
+        if (uiState.pairingCode.isNotBlank()) {
+          Text("Your code: ${uiState.pairingCode}", style = MaterialTheme.typography.titleMedium)
+          uiState.pairingExpiresAt?.let { Text("Expires at: $it", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        }
 
-    if (uiState.pairingCode.isNotBlank()) {
-      Text("Your code: ${uiState.pairingCode}")
-      uiState.pairingExpiresAt?.let { Text("Expires at: $it") }
-    }
+        OutlinedTextField(
+          modifier = Modifier.fillMaxWidth(),
+          value = uiState.joinCode,
+          onValueChange = { viewModel.onEvent(PairingUiEvent.JoinCodeChanged(it)) },
+          label = { Text("Join code") }
+        )
 
-    OutlinedTextField(
-      modifier = Modifier.fillMaxWidth(),
-      value = uiState.joinCode,
-      onValueChange = { viewModel.onEvent(PairingUiEvent.JoinCodeChanged(it)) },
-      label = { Text("Join code") }
-    )
+        Button(
+          onClick = { viewModel.onEvent(PairingUiEvent.JoinPair) },
+          enabled = !uiState.isLoading && uiState.isRegistered
+        ) {
+          Text("Join pair")
+        }
 
-    Button(
-      onClick = { viewModel.onEvent(PairingUiEvent.JoinPair) },
-      enabled = !uiState.isLoading && uiState.isRegistered
-    ) {
-      Text("Join pair")
-    }
-
-    if (uiState.isRegistered && (uiState.isPaired || uiState.pairingCode.isNotBlank())) {
-      Button(onClick = onContinue, enabled = !uiState.isLoading) {
-        Text("Continue to home")
+        if (uiState.isRegistered && (uiState.isPaired || uiState.pairingCode.isNotBlank() || uiState.isOfflineMode)) {
+          Button(onClick = onContinue, enabled = !uiState.isLoading) {
+            Text("Continue to home")
+          }
+        }
       }
     }
 

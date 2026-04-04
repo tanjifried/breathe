@@ -2,11 +2,10 @@ package com.breathe.presentation.ui.home
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -19,6 +18,13 @@ import androidx.lifecycle.viewModelScope
 import com.breathe.domain.model.StatusLevel
 import com.breathe.domain.repository.StatusRepository
 import com.breathe.presentation.navigation.Screen
+import com.breathe.presentation.theme.BreatheAccentStrong
+import com.breathe.presentation.theme.BreatheCanvas
+import com.breathe.presentation.ui.common.AppScreen
+import com.breathe.presentation.ui.common.BreatheCard
+import com.breathe.presentation.ui.common.MiniStat
+import com.breathe.presentation.ui.common.SectionTitle
+import com.breathe.presentation.ui.common.StatusPill
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -58,26 +64,59 @@ fun HomeScreen(
 ) {
   val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-  Column(
-    modifier = Modifier
-      .fillMaxSize()
-      .padding(24.dp),
-    verticalArrangement = Arrangement.spacedBy(16.dp)
+  AppScreen(
+    title = "Breathe",
+    subtitle = "A calmer surface for checking in before conflict becomes momentum."
   ) {
-    Text("Breathe")
-    Card(modifier = Modifier.fillMaxWidth()) {
-      Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("Own status: ${uiState.ownStatus?.name ?: "unset"}")
-        Text("Partner status: ${uiState.partnerStatus?.name ?: "unknown"}")
-        Text("WebSocket: ${if (uiState.wsConnected) "connected" else "offline"}")
+    BreatheCard {
+      Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        SectionTitle("Live state")
+        StatusPill(label = "You: ${uiState.ownStatus?.name ?: "Unset"}", status = uiState.ownStatus)
+        StatusPill(label = "Partner: ${uiState.partnerStatus?.name ?: "Unknown"}", status = uiState.partnerStatus)
+        MiniStat("Connection", if (uiState.wsConnected) "Realtime linked" else "Offline-first mode")
       }
     }
 
-    Button(onClick = { onNavigate(Screen.Status.route) }) { Text("Status") }
-    Button(onClick = { onNavigate(Screen.Calm.route) }) { Text("Calm") }
-    Button(onClick = { onNavigate(Screen.Timeout.route) }) { Text("Timeout") }
-    Button(onClick = { onNavigate(Screen.Voice.route) }) { Text("Voice Studio") }
-    Button(onClick = { onNavigate(Screen.Log.route) }) { Text("Conflict Log") }
-    Button(onClick = { onNavigate(Screen.Insights.route) }) { Text("Insights") }
+    BreatheCard {
+      Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionTitle("Regulation tools")
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+          Button(
+            onClick = { onNavigate(Screen.Status.route) },
+            modifier = Modifier.weight(1f),
+            colors = ButtonDefaults.buttonColors(containerColor = BreatheAccentStrong, contentColor = BreatheCanvas)
+          ) { Text("Status") }
+          Button(
+            onClick = { onNavigate(Screen.Calm.route) },
+            modifier = Modifier.weight(1f),
+            colors = ButtonDefaults.buttonColors(containerColor = BreatheAccentStrong, contentColor = BreatheCanvas)
+          ) { Text("Calm") }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+          Button(
+            onClick = { onNavigate(Screen.Timeout.route) },
+            modifier = Modifier.weight(1f),
+            colors = ButtonDefaults.buttonColors(containerColor = BreatheAccentStrong, contentColor = BreatheCanvas)
+          ) { Text("Timeout") }
+          Button(
+            onClick = { onNavigate(Screen.Voice.route) },
+            modifier = Modifier.weight(1f),
+            colors = ButtonDefaults.buttonColors(containerColor = BreatheAccentStrong, contentColor = BreatheCanvas)
+          ) { Text("Voice") }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+          Button(
+            onClick = { onNavigate(Screen.Log.route) },
+            modifier = Modifier.weight(1f),
+            colors = ButtonDefaults.buttonColors(containerColor = BreatheAccentStrong, contentColor = BreatheCanvas)
+          ) { Text("Log") }
+          Button(
+            onClick = { onNavigate(Screen.Insights.route) },
+            modifier = Modifier.weight(1f),
+            colors = ButtonDefaults.buttonColors(containerColor = BreatheAccentStrong, contentColor = BreatheCanvas)
+          ) { Text("Insights") }
+        }
+      }
+    }
   }
 }

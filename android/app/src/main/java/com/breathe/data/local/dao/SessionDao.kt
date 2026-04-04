@@ -12,11 +12,20 @@ interface SessionDao {
   @Query("SELECT * FROM sessions WHERE featureUsed = 'calm' AND durationSeconds IS NULL ORDER BY startedAt DESC LIMIT 1")
   fun observeLatestActiveCalmSession(): Flow<SessionEntity?>
 
+  @Query("SELECT * FROM sessions WHERE featureUsed = 'calm' AND durationSeconds IS NULL ORDER BY startedAt DESC LIMIT 1")
+  suspend fun getLatestActiveCalmSession(): SessionEntity?
+
   @Query("SELECT * FROM sessions WHERE featureUsed = 'timeout' ORDER BY startedAt DESC LIMIT 1")
   fun observeLatestTimeoutSession(): Flow<SessionEntity?>
 
+  @Query("SELECT * FROM sessions WHERE featureUsed = 'timeout' ORDER BY startedAt DESC LIMIT 1")
+  suspend fun getLatestTimeoutSession(): SessionEntity?
+
   @Query("SELECT * FROM sessions ORDER BY startedAt DESC")
   fun observeAllSessions(): Flow<List<SessionEntity>>
+
+  @Query("SELECT * FROM sessions WHERE sessionId = :sessionId LIMIT 1")
+  suspend fun getSessionById(sessionId: Long): SessionEntity?
 
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun upsert(entity: SessionEntity)

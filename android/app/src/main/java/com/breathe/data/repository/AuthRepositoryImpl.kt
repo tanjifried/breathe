@@ -27,12 +27,18 @@ class AuthRepositoryImpl @Inject constructor(
       pairingCode = snapshot.pairingCode,
       pairingExpiresAt = snapshot.pairingExpiresAt,
       hasToken = snapshot.hasToken,
-      isPaired = snapshot.isPaired
+      isPaired = snapshot.isPaired,
+      isOfflineMode = snapshot.offlineMode
     )
   }
 
   override suspend fun bootstrap() {
     connectIfAuthenticated()
+  }
+
+  override suspend fun continueOffline() {
+    webSocketManager.disconnect()
+    authSessionStorage.saveOfflineSession()
   }
 
   override suspend fun register(username: String, password: String) {

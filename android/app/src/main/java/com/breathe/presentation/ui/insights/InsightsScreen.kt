@@ -2,9 +2,8 @@ package com.breathe.presentation.ui.insights
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -17,6 +16,12 @@ import androidx.lifecycle.viewModelScope
 import com.breathe.domain.model.MoodTrend
 import com.breathe.domain.model.WeeklySummary
 import com.breathe.domain.usecase.GetInsightsUseCase
+import com.breathe.presentation.theme.BreatheAccentStrong
+import com.breathe.presentation.theme.BreatheCanvas
+import com.breathe.presentation.ui.common.AppScreen
+import com.breathe.presentation.ui.common.BreatheCard
+import com.breathe.presentation.ui.common.MiniStat
+import com.breathe.presentation.ui.common.SectionTitle
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -68,18 +73,33 @@ class InsightsViewModel @Inject constructor(
 fun InsightsScreen(viewModel: InsightsViewModel = hiltViewModel()) {
   val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-  Column(
-    modifier = Modifier
-      .fillMaxSize()
-      .padding(24.dp),
-    verticalArrangement = Arrangement.spacedBy(12.dp)
+  AppScreen(
+    title = "Weekly insights",
+    subtitle = "A softer review of patterns, not a scoreboard."
   ) {
-    Text("Weekly Insights")
-    Text(uiState.headline.ifBlank { "No insight yet." })
-    Text("Top feature: ${uiState.topFeature ?: "none"}")
-    Text("Average mood: ${uiState.weeklySummary.averageMood ?: "n/a"}")
-    Text("Mood direction: ${uiState.moodTrend.direction}")
-    uiState.recommendations.forEach { Text("• $it") }
-    Button(onClick = { viewModel.onEvent(InsightsUiEvent.Refresh) }) { Text("Refresh") }
+    BreatheCard {
+      Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionTitle("Snapshot")
+        Text(uiState.headline.ifBlank { "No insight yet." })
+        MiniStat("Top feature", uiState.topFeature ?: "none")
+        MiniStat("Average mood", uiState.weeklySummary.averageMood?.toString() ?: "n/a")
+        MiniStat("Mood direction", uiState.moodTrend.direction)
+      }
+    }
+
+    BreatheCard {
+      Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        SectionTitle("Recommendations")
+        if (uiState.recommendations.isEmpty()) {
+          Text("No recommendations yet.")
+        } else {
+          uiState.recommendations.forEach { Text("• $it") }
+        }
+        Button(
+          onClick = { viewModel.onEvent(InsightsUiEvent.Refresh) },
+          colors = ButtonDefaults.buttonColors(containerColor = BreatheAccentStrong, contentColor = BreatheCanvas)
+        ) { Text("Refresh") }
+      }
+    }
   }
 }

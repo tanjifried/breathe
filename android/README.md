@@ -14,19 +14,54 @@ This directory is the initial Android project scaffold for Breathe.
 - Compose navigation shell is in place
 - Hilt, Room, Retrofit, OkHttp, WorkManager, and FCM dependencies are declared
 - Main screens and ViewModels exist as scaffolding
-- No Gradle wrapper has been generated yet
+- Gradle wrapper is generated and the debug build succeeds
 
-## Next Bootstrap Step
+## Run From VS Code
 
-Once your local Android toolchain is installed, generate the wrapper from inside `android/` with a local Gradle install or Android Studio:
+Do not run `./gradlew adb`. `adb` is an Android SDK command, not a Gradle task.
+
+Use the dev script instead:
 
 ```bash
-gradle wrapper
+./scripts/dev-run.sh
 ```
 
-After that, the expected build loop is:
+For a visible emulator window:
 
 ```bash
-./gradlew assembleDebug
-./gradlew installDebug
+./scripts/dev-run-gui.sh
+```
+
+Helpful flags:
+
+```bash
+./scripts/dev-run.sh --headless
+./scripts/dev-run.sh --no-log
+./scripts/dev-run.sh --no-emulator
+./scripts/dev-run-gui.sh --no-log
+```
+
+The script will:
+
+- set `JAVA_HOME` to JDK 17 if needed
+- set `ANDROID_HOME` to `~/Android/Sdk` if needed
+- start the `Breathe_Pixel` emulator when no device is connected
+- build the debug APK
+- install the app
+- launch `com.breathe/.MainActivity`
+- tail logcat unless `--no-log` is passed
+- save logcat to `android/logs/logcat-YYYYMMDD-HHMMSS.txt`
+
+The GUI script will:
+
+- stop any running emulator first
+- start a visible `Breathe_Pixel` window
+- build, install, and launch the app
+- tail logcat unless `--no-log` is passed
+- save logcat to `android/logs/logcat-YYYYMMDD-HHMMSS.txt`
+
+If the GUI emulator fails with Qt or display-plugin errors, your desktop session is missing emulator GUI support. In that case use:
+
+```bash
+./scripts/dev-run.sh --headless
 ```

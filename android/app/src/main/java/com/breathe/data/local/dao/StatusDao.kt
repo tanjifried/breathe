@@ -14,4 +14,7 @@ interface StatusDao {
 
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   suspend fun upsert(entity: StatusEntity)
+
+  @Query("DELETE FROM status WHERE scope = :scope")
+  suspend fun delete(scope: String)
 }

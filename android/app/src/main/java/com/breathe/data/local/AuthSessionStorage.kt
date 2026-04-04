@@ -20,7 +20,8 @@ data class AuthSessionSnapshot(
   val username: String? = null,
   val coupleId: Long? = null,
   val pairingCode: String? = null,
-  val pairingExpiresAt: String? = null
+  val pairingExpiresAt: String? = null,
+  val offlineMode: Boolean = false
 ) {
   val hasToken: Boolean get() = !token.isNullOrBlank()
   val isPaired: Boolean get() = coupleId != null
@@ -44,6 +45,7 @@ class AuthSessionStorage @Inject constructor(
       .putString(KEY_TOKEN, response.token)
       .putLong(KEY_USER_ID, response.user.id)
       .putString(KEY_USERNAME, response.user.username)
+      .putBoolean(KEY_OFFLINE_MODE, false)
       .remove(KEY_COUPLE_ID)
       .remove(KEY_PAIRING_CODE)
       .remove(KEY_PAIRING_EXPIRES_AT)
@@ -56,6 +58,7 @@ class AuthSessionStorage @Inject constructor(
       .putLong(KEY_COUPLE_ID, coupleId)
       .putString(KEY_PAIRING_CODE, pairingCode)
       .putString(KEY_PAIRING_EXPIRES_AT, expiresAt)
+      .putBoolean(KEY_OFFLINE_MODE, false)
       .apply()
     state.value = readSnapshot()
   }
@@ -63,6 +66,20 @@ class AuthSessionStorage @Inject constructor(
   fun saveJoinedCouple(coupleId: Long) {
     prefs.edit()
       .putLong(KEY_COUPLE_ID, coupleId)
+      .putBoolean(KEY_OFFLINE_MODE, false)
+      .remove(KEY_PAIRING_CODE)
+      .remove(KEY_PAIRING_EXPIRES_AT)
+      .apply()
+    state.value = readSnapshot()
+  }
+
+  fun saveOfflineSession() {
+    prefs.edit()
+      .putBoolean(KEY_OFFLINE_MODE, true)
+      .remove(KEY_TOKEN)
+      .remove(KEY_USER_ID)
+      .remove(KEY_USERNAME)
+      .remove(KEY_COUPLE_ID)
       .remove(KEY_PAIRING_CODE)
       .remove(KEY_PAIRING_EXPIRES_AT)
       .apply()
@@ -76,7 +93,8 @@ class AuthSessionStorage @Inject constructor(
     username = prefs.getString(KEY_USERNAME, null),
     coupleId = prefs.getLong(KEY_COUPLE_ID, -1L).takeIf { it > 0L },
     pairingCode = prefs.getString(KEY_PAIRING_CODE, null),
-    pairingExpiresAt = prefs.getString(KEY_PAIRING_EXPIRES_AT, null)
+    pairingExpiresAt = prefs.getString(KEY_PAIRING_EXPIRES_AT, null),
+    offlineMode = prefs.getBoolean(KEY_OFFLINE_MODE, false)
   )
 
   private fun createPrefs(context: Context): SharedPreferences =
@@ -105,5 +123,6 @@ class AuthSessionStorage @Inject constructor(
     const val KEY_COUPLE_ID = "couple_id"
     const val KEY_PAIRING_CODE = "pairing_code"
     const val KEY_PAIRING_EXPIRES_AT = "pairing_expires_at"
+    const val KEY_OFFLINE_MODE = "offline_mode"
   }
 }

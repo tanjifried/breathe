@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 interface AuthRepository {
   fun observeSession(): Flow<AuthSession>
   suspend fun bootstrap()
+  suspend fun continueOffline()
   suspend fun register(username: String, password: String)
   suspend fun login(username: String, password: String)
   suspend fun createPairingCode()

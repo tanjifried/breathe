@@ -27,7 +27,8 @@ class SessionRepositoryImpl @Inject constructor(
       entity?.let {
         CalmSession(
           sessionId = it.sessionId,
-          secondsRemaining = remainingSeconds(it.startedAt, minutes = 20)
+          secondsRemaining = remainingSeconds(it.startedAt, minutes = 20),
+          startedAt = it.startedAt
         )
       }
     }
@@ -40,6 +41,7 @@ class SessionRepositoryImpl @Inject constructor(
         val unlockAt = unlockAt(entity.startedAt, minutes = 20)
         val secondsRemaining = remainingSeconds(entity.startedAt, minutes = 20)
         TimeoutLock(
+          sessionId = entity.sessionId,
           secondsRemaining = secondsRemaining,
           isLocked = secondsRemaining > 0,
           unlocksAt = unlockAt
@@ -64,6 +66,20 @@ class SessionRepositoryImpl @Inject constructor(
     }
 
   override suspend fun startSession(feature: SessionFeature, moodBefore: Int?): Long? {
+    when (feature) {
+      SessionFeature.CALM -> {
+        sessionDao.getLatestActiveCalmSession()?.let { return it.sessionId }
+      }
+
+      SessionFeature.TIMEOUT -> {
+        sessionDao.getLatestTimeoutSession()?.let {
+          if (remainingSeconds(it.startedAt, minutes = 20) > 0) {
+            return it.sessionId
+          }
+        }
+      }
+    }
+
     val provisionalId = System.currentTimeMillis()
     val startedAt = Instant.now().toString()
     sessionDao.upsert(
@@ -101,6 +117,23 @@ class SessionRepositoryImpl @Inject constructor(
     privateNote: String?,
     shared: Boolean
   ) {
+    val existing = sessionDao.getSessionById(sessionId)
+    if (existing != null) {
+      val endedAt = Instant.now()
+      val computedDuration = runCatching {
+        Duration.between(Instant.parse(existing.startedAt), endedAt).seconds.coerceAtLeast(0).toInt()
+      }.getOrDefault(existing.durationSeconds ?: 0)
+
+      sessionDao.upsert(
+        existing.copy(
+          durationSeconds = existing.durationSeconds ?: computedDuration,
+          moodAfter = moodAfter ?: existing.moodAfter,
+          privateNote = privateNote ?: existing.privateNote,
+          shared = shared || existing.shared
+        )
+      )
+    }
+
     runCatching {
       sessionApi.endSession(
         EndSessionRequest(

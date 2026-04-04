@@ -27,10 +27,12 @@ enum class SessionFeature {
 data class CalmSession(
   val sessionId: Long? = null,
   val secondsRemaining: Int = 0,
+  val startedAt: String? = null,
   val voiceTrack: String? = null
 )
 
 data class TimeoutLock(
+  val sessionId: Long? = null,
   val secondsRemaining: Int = 0,
   val isLocked: Boolean = false,
   val unlocksAt: String? = null
@@ -65,7 +67,8 @@ data class AuthSession(
   val pairingCode: String? = null,
   val pairingExpiresAt: String? = null,
   val hasToken: Boolean = false,
-  val isPaired: Boolean = false
+  val isPaired: Boolean = false,
+  val isOfflineMode: Boolean = false
 )
 
 data class WeeklySummary(

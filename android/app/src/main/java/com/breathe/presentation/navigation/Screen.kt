@@ -1,6 +1,7 @@
 package com.breathe.presentation.navigation
 
 sealed class Screen(val route: String, val title: String) {
+  data object Loading : Screen("loading", "Loading")
   data object Pairing : Screen("pairing", "Pairing")
   data object Home : Screen("home", "Home")
   data object Calm : Screen("calm", "Calm")
