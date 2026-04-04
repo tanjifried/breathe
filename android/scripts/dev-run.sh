@@ -14,6 +14,7 @@ HEADLESS=0
 COLD_BOOT=0
 TARGET_SERIAL=""
 TARGET_SERVER_URL=""
+TARGET_SERIAL_OVERRIDE="${BREATHE_DEVICE_SERIAL:-}"
 LOG_DIR="$ANDROID_DIR/logs"
 LOG_FILE="$LOG_DIR/logcat-$(date +%Y%m%d-%H%M%S).txt"
 
@@ -31,9 +32,17 @@ while (($# > 0)); do
     --cold-boot)
       COLD_BOOT=1
       ;;
+    --serial)
+      shift
+      if [[ $# -eq 0 ]]; then
+        printf 'Missing value for --serial\n' >&2
+        exit 1
+      fi
+      TARGET_SERIAL_OVERRIDE="$1"
+      ;;
     *)
       printf 'Unknown option: %s\n' "$1" >&2
-      printf 'Usage: %s [--headless] [--cold-boot] [--no-log] [--no-emulator]\n' "$0" >&2
+      printf 'Usage: %s [--headless] [--cold-boot] [--serial <adb-serial>] [--no-log] [--no-emulator]\n' "$0" >&2
       exit 1
       ;;
   esac
@@ -77,7 +86,15 @@ has_offline_device() {
 }
 
 resolve_target_device() {
-  TARGET_SERIAL="$(adb devices | awk 'NR>1 && $2 == "device" {print $1; exit}')"
+  if [[ -n "$TARGET_SERIAL_OVERRIDE" ]]; then
+    if [[ "$(adb -s "$TARGET_SERIAL_OVERRIDE" get-state 2>/dev/null || true)" != "device" ]]; then
+      return 1
+    fi
+
+    TARGET_SERIAL="$TARGET_SERIAL_OVERRIDE"
+  else
+    TARGET_SERIAL="$(adb devices | awk 'NR>1 && $2 == "device" {print $1; exit}')"
+  fi
 
   if [[ -z "$TARGET_SERIAL" ]]; then
     return 1

@@ -5,7 +5,7 @@ echo "Starting Breathe Kubuntu Dev Setup..."
 
 echo "Installing base packages..."
 sudo apt update
-sudo apt install -y build-essential openjdk-17-jdk git curl unzip zip ca-certificates qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils
+sudo apt install -y build-essential openjdk-17-jdk git curl unzip zip ca-certificates qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils inotify-tools
 
 echo "Adding user to kvm and libvirt groups..."
 sudo usermod -aG kvm,libvirt "$USER"

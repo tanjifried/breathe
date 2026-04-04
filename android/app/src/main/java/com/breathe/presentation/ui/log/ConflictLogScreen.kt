@@ -1,29 +1,46 @@
 package com.breathe.presentation.ui.log
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.EditNote
+import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.SelfImprovement
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.breathe.domain.model.ConflictLogEntry
+import com.breathe.domain.model.SessionFeature
 import com.breathe.domain.repository.SessionRepository
+import com.breathe.presentation.navigation.Screen
 import com.breathe.presentation.theme.BreatheAccentStrong
+import com.breathe.presentation.theme.BreatheBorder
 import com.breathe.presentation.theme.BreatheCanvas
+import com.breathe.presentation.theme.BreatheCardSurface
+import com.breathe.presentation.theme.BreatheInk
+import com.breathe.presentation.theme.BreatheMutedInk
+import com.breathe.presentation.theme.BreatheOverlay
+import com.breathe.presentation.theme.BreatheRed
+import com.breathe.presentation.theme.BreatheYellow
 import com.breathe.presentation.ui.common.AppScreen
 import com.breathe.presentation.ui.common.BreatheCard
-import com.breathe.presentation.ui.common.MiniStat
-import com.breathe.presentation.ui.common.SectionTitle
+import com.breathe.presentation.ui.common.PrimaryActionButton
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -69,58 +86,117 @@ class LogViewModel @Inject constructor(
 }
 
 @Composable
-fun ConflictLogScreen(viewModel: LogViewModel = hiltViewModel()) {
+fun ConflictLogScreen(
+  onNavigate: (String) -> Unit = {},
+  viewModel: LogViewModel = hiltViewModel()
+) {
   val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
   AppScreen(
     title = "Conflict log",
-    subtitle = "A private record of repair attempts and the shape each difficult moment took."
+    subtitle = "A private record of repair attempts and the shape each difficult moment took.",
+    showBottomNav = true,
+    selectedBottomRoute = Screen.Log.route,
+    onNavigate = onNavigate
   ) {
-    BreatheCard {
-      Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SectionTitle("Overview")
-        MiniStat("Entries", uiState.entries.size.toString())
-        MiniStat("Selected", uiState.selectedEntry?.feature?.name ?: "None yet")
-        MiniStat("Shared", if (uiState.isShared) "Yes" else "No")
-      }
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+      LogSummaryCard(modifier = Modifier.weight(1f), label = "Entries", value = uiState.entries.size.toString())
+      LogSummaryCard(modifier = Modifier.weight(1f), label = "Selected", value = uiState.selectedEntry?.feature?.name ?: "None")
+      LogSummaryCard(modifier = Modifier.weight(1f), label = "Shared", value = if (uiState.isShared) "Yes" else "No")
     }
 
-    BreatheCard {
-      Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SectionTitle("Selected entry")
-        val entry = uiState.selectedEntry
-        if (entry == null) {
-          Text("No sessions have been logged yet.")
-        } else {
-          MiniStat("Feature", entry.feature.name)
-          MiniStat("Started", entry.startedAt)
-          MiniStat("Duration", entry.durationSeconds?.let { "$it sec" } ?: "Active or unavailable")
-          MiniStat("Mood shift", buildMoodShift(entry))
-          Text(entry.privateNote ?: "No private note saved for this session.")
-        }
-      }
-    }
-
-    BreatheCard {
-      Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        SectionTitle("Entries")
-        if (uiState.entries.isEmpty()) {
-          Text("Your local log is still empty. Calm and Timeout sessions will appear here.")
-        } else {
-          LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(uiState.entries, key = { it.sessionId }) { entry ->
-              Button(
-                onClick = { viewModel.onEvent(LogUiEvent.SelectEntry(entry.sessionId)) },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = BreatheAccentStrong, contentColor = BreatheCanvas)
-              ) {
-                Text("${entry.feature.name} · ${entry.startedAt}")
-              }
-            }
+    BreatheCard(containerColor = BreatheOverlay.copy(alpha = 0.54f)) {
+      Text("Selected entry", style = androidx.compose.material3.MaterialTheme.typography.headlineMedium, color = BreatheAccentStrong)
+      val entry = uiState.selectedEntry
+      if (entry == null) {
+        Text("No sessions have been logged yet.", style = androidx.compose.material3.MaterialTheme.typography.bodyMedium, color = BreatheMutedInk)
+      } else {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+          Icon(
+            imageVector = if (entry.feature == SessionFeature.CALM) Icons.Rounded.SelfImprovement else Icons.Rounded.Lock,
+            contentDescription = null,
+            tint = featureAccent(entry.feature)
+          )
+          Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(featureTitle(entry.feature), style = androidx.compose.material3.MaterialTheme.typography.titleMedium, color = BreatheInk)
+            Text(prettyMoment(entry.startedAt), style = androidx.compose.material3.MaterialTheme.typography.bodySmall, color = BreatheMutedInk)
           }
         }
+        Text(
+          text = entry.privateNote ?: "No private note saved for this session.",
+          style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+          color = BreatheMutedInk
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+          LogMetricChip(modifier = Modifier.weight(1f), label = "Duration", value = entry.durationSeconds?.let { "$it sec" } ?: "Open")
+          LogMetricChip(modifier = Modifier.weight(1f), label = "Mood shift", value = buildMoodShift(entry))
+        }
       }
     }
+
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+      Text("Entries", style = androidx.compose.material3.MaterialTheme.typography.headlineMedium, color = BreatheAccentStrong)
+      if (uiState.entries.isEmpty()) {
+        BreatheCard {
+          Text(
+            text = "Your local log is still empty. Calm and Timeout sessions will appear here.",
+            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+            color = BreatheMutedInk
+          )
+        }
+      } else {
+        uiState.entries.forEach { entry ->
+          LogEntryCard(
+            entry = entry,
+            selected = uiState.selectedEntry?.sessionId == entry.sessionId,
+            onClick = { viewModel.onEvent(LogUiEvent.SelectEntry(entry.sessionId)) }
+          )
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun LogSummaryCard(label: String, value: String, modifier: Modifier = Modifier) {
+  BreatheCard(modifier = modifier, containerColor = BreatheCardSurface) {
+    Text(label.uppercase(), style = androidx.compose.material3.MaterialTheme.typography.labelMedium, color = BreatheMutedInk)
+    Text(value, style = androidx.compose.material3.MaterialTheme.typography.titleMedium, color = BreatheInk)
+  }
+}
+
+@Composable
+private fun LogMetricChip(label: String, value: String, modifier: Modifier = Modifier) {
+  Column(
+    modifier = modifier
+      .background(BreatheCardSurface, RoundedCornerShape(18.dp))
+      .padding(horizontal = 14.dp, vertical = 12.dp)
+  ) {
+    Text(label.uppercase(), style = androidx.compose.material3.MaterialTheme.typography.labelMedium, color = BreatheMutedInk)
+    Text(value, style = androidx.compose.material3.MaterialTheme.typography.titleMedium, color = BreatheInk)
+  }
+}
+
+@Composable
+private fun LogEntryCard(entry: ConflictLogEntry, selected: Boolean, onClick: () -> Unit) {
+  Row(
+    modifier = Modifier
+      .fillMaxWidth()
+      .background(
+        if (selected) featureAccent(entry.feature).copy(alpha = 0.12f) else BreatheOverlay.copy(alpha = 0.48f),
+        RoundedCornerShape(22.dp)
+      )
+      .border(1.dp, if (selected) featureAccent(entry.feature) else BreatheBorder.copy(alpha = 0.2f), RoundedCornerShape(22.dp))
+      .clickable(onClick = onClick)
+      .padding(horizontal = 18.dp, vertical = 16.dp),
+    horizontalArrangement = Arrangement.SpaceBetween,
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+      Text(featureTitle(entry.feature), style = androidx.compose.material3.MaterialTheme.typography.titleMedium, color = BreatheInk)
+      Text(prettyMoment(entry.startedAt), style = androidx.compose.material3.MaterialTheme.typography.bodySmall, color = BreatheMutedInk)
+    }
+    Text(buildMoodShift(entry), style = androidx.compose.material3.MaterialTheme.typography.labelLarge, color = featureAccent(entry.feature))
   }
 }
 
@@ -134,3 +210,15 @@ private fun buildMoodShift(entry: ConflictLogEntry): String {
     "n/a"
   }
 }
+
+private fun featureAccent(feature: SessionFeature): Color = when (feature) {
+  SessionFeature.CALM -> BreatheAccentStrong
+  SessionFeature.TIMEOUT -> BreatheRed
+}
+
+private fun featureTitle(feature: SessionFeature): String = when (feature) {
+  SessionFeature.CALM -> "Calm session"
+  SessionFeature.TIMEOUT -> "Structured timeout"
+}
+
+private fun prettyMoment(raw: String): String = raw.replace('T', ' ').removeSuffix("Z")

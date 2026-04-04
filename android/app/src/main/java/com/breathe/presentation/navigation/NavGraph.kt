@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -33,6 +34,10 @@ fun BreatheNavGraph() {
   val appEntryViewModel = hiltViewModel<AppEntryViewModel>()
   val appEntryState by appEntryViewModel.uiState.collectAsStateWithLifecycle()
 
+  val navigateTo: (String) -> Unit = { route ->
+    navController.navigateSingleTop(route)
+  }
+
   NavHost(
     navController = navController,
     startDestination = Screen.Loading.route
@@ -54,43 +59,71 @@ fun BreatheNavGraph() {
     composable(Screen.Pairing.route) {
       PairingScreen(
         viewModel = hiltViewModel<PairingViewModel>(),
-        onContinue = { navController.navigate(Screen.Home.route) }
+        onContinue = { navController.navigateSingleTop(Screen.Home.route) }
       )
     }
 
     composable(Screen.Home.route) {
       HomeScreen(
         viewModel = hiltViewModel<HomeViewModel>(),
-        onNavigate = { route -> navController.navigate(route) }
+        onNavigate = navigateTo
       )
     }
 
     composable(Screen.Calm.route) {
-      CalmScreen(viewModel = hiltViewModel<CalmViewModel>())
+      CalmScreen(
+        viewModel = hiltViewModel<CalmViewModel>(),
+        onNavigate = navigateTo
+      )
     }
 
     composable(Screen.Timeout.route) {
-      TimeoutScreen(viewModel = hiltViewModel<TimeoutViewModel>())
+      TimeoutScreen(
+        viewModel = hiltViewModel<TimeoutViewModel>(),
+        onNavigate = navigateTo
+      )
     }
 
     composable(Screen.Status.route) {
-      StatusScreen(viewModel = hiltViewModel<StatusViewModel>())
+      StatusScreen(
+        viewModel = hiltViewModel<StatusViewModel>(),
+        onNavigate = navigateTo
+      )
     }
 
     composable(Screen.Updates.route) {
-      QuickUpdatesScreen(viewModel = hiltViewModel<QuickUpdatesViewModel>())
+      QuickUpdatesScreen(
+        viewModel = hiltViewModel<QuickUpdatesViewModel>(),
+        onNavigate = navigateTo
+      )
     }
 
     composable(Screen.Voice.route) {
-      VoiceStudioScreen(viewModel = hiltViewModel<VoiceViewModel>())
+      VoiceStudioScreen(
+        viewModel = hiltViewModel<VoiceViewModel>(),
+        onNavigate = navigateTo
+      )
     }
 
     composable(Screen.Log.route) {
-      ConflictLogScreen(viewModel = hiltViewModel<LogViewModel>())
+      ConflictLogScreen(
+        viewModel = hiltViewModel<LogViewModel>(),
+        onNavigate = navigateTo
+      )
     }
 
     composable(Screen.Insights.route) {
-      InsightsScreen(viewModel = hiltViewModel<InsightsViewModel>())
+      InsightsScreen(
+        viewModel = hiltViewModel<InsightsViewModel>(),
+        onNavigate = navigateTo
+      )
     }
+  }
+}
+
+private fun NavHostController.navigateSingleTop(route: String) {
+  navigate(route) {
+    launchSingleTop = true
+    restoreState = true
   }
 }

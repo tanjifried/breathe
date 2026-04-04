@@ -1,8 +1,29 @@
 package com.breathe.presentation.ui.calm
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.material.icons.rounded.Timer
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -13,14 +34,22 @@ import com.breathe.domain.repository.SessionRepository
 import com.breathe.domain.usecase.EndSessionUseCase
 import com.breathe.domain.usecase.SendPeaceUseCase
 import com.breathe.domain.usecase.StartSessionUseCase
+import com.breathe.presentation.theme.BreatheAccent
+import com.breathe.presentation.theme.BreatheAccentStrong
+import com.breathe.presentation.theme.BreatheBorder
+import com.breathe.presentation.theme.BreatheCardSurface
+import com.breathe.presentation.theme.BreatheGreen
+import com.breathe.presentation.theme.BreatheInk
+import com.breathe.presentation.theme.BreatheMutedInk
+import com.breathe.presentation.theme.BreatheOverlay
+import com.breathe.presentation.theme.BreatheYellow
+import com.breathe.presentation.navigation.Screen
 import com.breathe.presentation.ui.common.AppScreen
 import com.breathe.presentation.ui.common.BreatheCard
-import com.breathe.presentation.ui.common.HeroCard
-import com.breathe.presentation.ui.common.MiniStat
 import com.breathe.presentation.ui.common.PrimaryActionButton
-import com.breathe.presentation.ui.common.SectionTitle
 import com.breathe.presentation.ui.common.SecondaryActionButton
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,7 +58,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 data class CalmUiState(
   val secondsRemaining: Int = 0,
@@ -89,9 +117,7 @@ class CalmViewModel @Inject constructor(
   }
 
   private fun startCountdown(sessionId: Long?, initialSeconds: Int) {
-    if (sessionId == null) {
-      return
-    }
+    if (sessionId == null) return
 
     countdownJob = viewModelScope.launch {
       var remaining = initialSeconds
@@ -99,11 +125,7 @@ class CalmViewModel @Inject constructor(
         delay(1_000)
         remaining -= 1
         _uiState.update {
-          if (it.sessionId == sessionId) {
-            it.copy(secondsRemaining = remaining.coerceAtLeast(0))
-          } else {
-            it
-          }
+          if (it.sessionId == sessionId) it.copy(secondsRemaining = remaining.coerceAtLeast(0)) else it
         }
       }
       endSessionUseCase(sessionId)
@@ -114,53 +136,140 @@ class CalmViewModel @Inject constructor(
     secondsRemaining = this?.secondsRemaining ?: 0,
     voiceTrack = this?.voiceTrack,
     sessionId = this?.sessionId,
-    isActive = this?.sessionId != null && (this.secondsRemaining > 0),
+    isActive = this?.sessionId != null && this.secondsRemaining > 0,
     lastSignalMessage = lastSignalMessage
   )
 }
 
 @Composable
-fun CalmScreen(viewModel: CalmViewModel = hiltViewModel()) {
+fun CalmScreen(
+  onNavigate: (String) -> Unit = {},
+  viewModel: CalmViewModel = hiltViewModel()
+) {
   val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
   AppScreen(
     title = "Calm session",
-    subtitle = "A soft reset before words get faster than your nervous system can handle."
+    subtitle = "A soft reset before words get faster than your nervous system can handle.",
+    showBottomNav = true,
+    selectedBottomRoute = null,
+    onNavigate = onNavigate
   ) {
-    HeroCard(
-      eyebrow = "Breathing room",
-      title = if (uiState.isActive) formatMinutes(uiState.secondsRemaining) else "Start with one slower breath.",
-      body = if (uiState.isActive) {
-        "Stay with the pause. The goal is body-level de-escalation before problem solving."
-      } else {
-        "Calm is gentler than timeout. Use it when repair still feels possible with a little more steadiness."
-      }
-    )
+    BreatheCard(containerColor = BreatheOverlay.copy(alpha = 0.48f)) {
+      Column(verticalArrangement = Arrangement.spacedBy(24.dp), modifier = Modifier.fillMaxWidth()) {
+        CalmOrb(secondsRemaining = uiState.secondsRemaining)
 
-    BreatheCard {
-      SectionTitle("Session state")
-      MiniStat("Time remaining", formatMinutes(uiState.secondsRemaining))
-      MiniStat("Voice track", uiState.voiceTrack ?: "Warm voice guidance can be added next")
-      uiState.lastSignalMessage?.let { Text(it) }
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+          Text(
+            text = "SESSION DETAILS",
+            style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
+            color = BreatheMutedInk
+          )
+          SessionInfoRow(icon = Icons.Rounded.Mic, label = "Voice track", value = uiState.voiceTrack ?: "Not selected")
+          SessionInfoRow(icon = Icons.Rounded.Timer, label = "Seconds remaining", value = uiState.secondsRemaining.toString())
+        }
+      }
     }
 
-    BreatheCard {
-      SectionTitle("Actions")
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
       PrimaryActionButton(
-        text = if (uiState.isActive) "Calm session is active" else "Start calm session",
+        text = if (uiState.isActive) "Calm session active" else "Start calm session",
         onClick = { viewModel.onEvent(CalmUiEvent.StartSession) },
         enabled = !uiState.isActive
       )
+
       if (uiState.isActive) {
         SecondaryActionButton(
-          text = "Complete session",
+          text = "Complete calm session",
           onClick = { viewModel.onEvent(CalmUiEvent.CompleteSession) }
         )
       }
+
       SecondaryActionButton(
         text = "Send peace",
-        onClick = { viewModel.onEvent(CalmUiEvent.SendPeace) }
+        onClick = { viewModel.onEvent(CalmUiEvent.SendPeace) },
+        icon = Icons.Rounded.Favorite
       )
+    }
+
+    uiState.lastSignalMessage?.let { message ->
+      BreatheCard(containerColor = BreatheYellow.copy(alpha = 0.16f)) {
+        Text(message, style = androidx.compose.material3.MaterialTheme.typography.bodyMedium, color = BreatheInk)
+      }
+    }
+  }
+}
+
+@Composable
+private fun CalmOrb(secondsRemaining: Int) {
+  Box(
+    modifier = Modifier.fillMaxWidth(),
+    contentAlignment = Alignment.Center
+  ) {
+    Box(
+      modifier = Modifier
+        .size(268.dp)
+        .background(BreatheAccent.copy(alpha = 0.08f), CircleShape),
+      contentAlignment = Alignment.Center
+    ) {
+      Box(
+        modifier = Modifier
+          .size(236.dp)
+          .background(BreatheAccent.copy(alpha = 0.12f), CircleShape),
+        contentAlignment = Alignment.Center
+      ) {
+        Box(
+          modifier = Modifier
+            .size(208.dp)
+            .background(
+              brush = Brush.linearGradient(
+                colors = listOf(BreatheCardSurface, BreatheGreen.copy(alpha = 0.18f), BreatheYellow.copy(alpha = 0.18f))
+              ),
+              shape = CircleShape
+            )
+            .border(1.dp, BreatheBorder.copy(alpha = 0.4f), CircleShape),
+          contentAlignment = Alignment.Center
+        ) {
+          Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+              text = formatMinutes(secondsRemaining),
+              style = androidx.compose.material3.MaterialTheme.typography.headlineLarge,
+              color = BreatheAccentStrong
+            )
+            Text(
+              text = "MINUTES",
+              style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
+              color = BreatheAccentStrong.copy(alpha = 0.6f)
+            )
+          }
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun SessionInfoRow(icon: ImageVector, label: String, value: String) {
+  Row(
+    modifier = Modifier
+      .fillMaxWidth()
+      .background(BreatheCardSurface, RoundedCornerShape(18.dp))
+      .padding(horizontal = 16.dp, vertical = 14.dp),
+    horizontalArrangement = Arrangement.spacedBy(12.dp),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Box(
+      modifier = Modifier
+        .size(40.dp)
+        .background(BreatheAccent.copy(alpha = 0.14f), CircleShape),
+      contentAlignment = Alignment.Center
+    ) {
+      Icon(imageVector = icon, contentDescription = null, tint = BreatheAccentStrong)
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+      Text(label, style = androidx.compose.material3.MaterialTheme.typography.labelMedium, color = BreatheMutedInk)
+      Text(value, style = androidx.compose.material3.MaterialTheme.typography.titleMedium, color = BreatheInk)
     }
   }
 }

@@ -41,10 +41,25 @@ Helpful flags:
 ```bash
 ./scripts/dev-run.sh --headless
 ./scripts/dev-run.sh --cold-boot
+./scripts/dev-run.sh --serial <adb-serial>
 ./scripts/dev-run.sh --no-log
 ./scripts/dev-run.sh --no-emulator
 ./scripts/dev-run-gui.sh --cold-boot
 ./scripts/dev-run-gui.sh --no-log
+./scripts/dev-watch-phone.sh
+```
+
+For continuous updates on a USB-connected Android phone:
+
+```bash
+./scripts/dev-watch-phone.sh
+```
+
+This watches `app/src` and rebuilds, reinstalls, and relaunches the app on the connected physical phone after each file change. If more than one device is connected, set:
+
+```bash
+export BREATHE_DEVICE_SERIAL=<adb-serial>
+./scripts/dev-watch-phone.sh
 ```
 
 The script will:
@@ -61,6 +76,8 @@ The script will:
 - launch the app through the launcher intent with retries after install
 - tail logcat unless `--no-log` is passed
 - save logcat to `android/logs/logcat-YYYYMMDD-HHMMSS.txt`
+
+The phone watch script requires `inotifywait` from `inotify-tools`.
 
 The GUI script will:
 

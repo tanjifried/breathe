@@ -9,3 +9,4 @@ These temporary agents are scoped to the current Breathe milestone.
 - `temp-clinical-logic.md`: copy, cooling-period wording, prompts, and intervention language
 - `temp-payload-router.md`: lightweight classification for notification and socket payload envelopes
 - `temp-ui-system-designer.md`: Android/extension design translation, visual system alignment, and Stitch handoff refinement
+- `temp-ui-master.md`: Android Stitch implementation, UI review, deep-debug-driven fixes, and on-device polish passes
