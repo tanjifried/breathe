@@ -4,7 +4,20 @@ const db = require('../db/db');
 
 const VALID_COLORS = new Set(['green', 'yellow', 'red']);
 
+const normalizeUserId = (value) => {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    return null;
+  }
+  return parsed;
+};
+
 const getPartnerId = (userId) => {
+  const normalizedUserId = normalizeUserId(userId);
+  if (!normalizedUserId) {
+    return null;
+  }
+
   const row = db
     .prepare(
       `SELECT c.partner_a_id, c.partner_b_id
@@ -12,17 +25,21 @@ const getPartnerId = (userId) => {
        JOIN couples c ON c.id = u.couple_id
        WHERE u.id = ?`
     )
-    .get(userId);
+    .get(normalizedUserId);
 
   if (!row) {
     return null;
   }
 
-  if (row.partner_a_id === userId) {
+  if (row.partner_a_id === normalizedUserId) {
     return row.partner_b_id || null;
   }
 
-  return row.partner_a_id || null;
+  if (row.partner_b_id === normalizedUserId) {
+    return row.partner_a_id || null;
+  }
+
+  return null;
 };
 
 const createStatusRouter = (authMiddleware, hub) => {

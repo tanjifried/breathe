@@ -9,7 +9,7 @@
   <body>
     <main class="options-root">
       <h1>Breathe Settings</h1>
-      <p class="options-intro">Configure server sync for partner status.</p>
+      <p class="options-intro">Configure server sync and link with your partner in a few clicks.</p>
 
       <form id="settings-form" novalidate>
         <div>
@@ -33,6 +33,48 @@
             autocomplete="off"
           ></textarea>
         </div>
+
+        <section class="option-section" aria-labelledby="linking-heading">
+          <h3 id="linking-heading" class="option-heading">Quick partner linking</h3>
+          <p class="option-desc">Use your server account and generate or enter a 6-digit code.</p>
+
+          <div class="quick-grid">
+            <div>
+              <label class="field-label" for="auth-username">Username</label>
+              <input id="auth-username" name="auth-username" type="text" placeholder="yourname" autocomplete="username" />
+            </div>
+            <div>
+              <label class="field-label" for="auth-password">Password</label>
+              <input
+                id="auth-password"
+                name="auth-password"
+                type="password"
+                placeholder="At least 6 characters"
+                autocomplete="current-password"
+              />
+            </div>
+          </div>
+
+          <div class="quick-actions">
+            <button type="button" id="auth-btn" class="secondary-btn">Sign in or create account</button>
+          </div>
+
+          <div class="quick-grid pairing-grid">
+            <div>
+              <label class="field-label" for="pairing-code">Partner code</label>
+              <input id="pairing-code" name="pairing-code" type="text" inputmode="numeric" maxlength="6" placeholder="123456" autocomplete="off" />
+            </div>
+            <div class="pairing-code-display">
+              <span class="field-label">Your code</span>
+              <span id="generated-code" class="code-pill">Not created yet</span>
+            </div>
+          </div>
+
+          <div class="quick-actions">
+            <button type="button" id="create-code-btn" class="secondary-btn">Create code</button>
+            <button type="button" id="join-code-btn" class="secondary-btn">Join with code</button>
+          </div>
+        </section>
 
         <div>
           <label class="field-label" for="timeout-duration">Default Timeout Duration (Minutes)</label>

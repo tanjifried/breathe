@@ -23,6 +23,20 @@ The Android app now builds, installs, and launches successfully, but live sign-i
 - WebSocket endpoint currently uses JWT auth via query param:
   - `ws://<server>/ws?token=<jwt>`
 
+## Current Runtime Baseline
+
+- The active Breathe backend runs on the host via PM2 (`breathe`), not via a repo-local Docker compose file.
+- Local Android emulator traffic should target host port `3000` directly:
+  - `http://10.0.2.2:3000/`
+- Nginx is used for external/tailnet routing (`/api/*` and `/ws`), but emulator connectivity does not require Nginx in the loop.
+- This machine also runs unrelated services (for example Vaultwarden) behind Nginx/Docker.
+
+## Safety Constraints
+
+- Do not run broad service-impacting commands (`docker compose down`, `docker stop`, `systemctl restart nginx`, prune commands).
+- If a restart is required for Breathe only, prefer `pm2 restart breathe`.
+- Validate Breathe changes without disrupting other containers or reverse-proxy workloads.
+
 ## What Needs To Work
 
 1. `POST /api/register`
