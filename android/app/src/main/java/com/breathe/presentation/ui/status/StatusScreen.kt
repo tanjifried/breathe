@@ -212,7 +212,7 @@ private fun StatusAvatarCard(
         )
         Text(
           text = label,
-          style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
+          style = androidx.compose.material3.MaterialTheme.typography.titleLarge,
           color = BreatheInk,
           textAlign = TextAlign.Center,
           maxLines = 2,
@@ -320,10 +320,9 @@ private fun SelectionNudgeCard(status: StatusLevel?) {
   }
 
   BreatheCard(containerColor = accent.copy(alpha = 0.12f)) {
-    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.Top) {
+    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
       Box(
         modifier = Modifier
-          .padding(top = 2.dp)
           .size(40.dp)
           .background(accent.copy(alpha = 0.14f), CircleShape),
         contentAlignment = Alignment.Center

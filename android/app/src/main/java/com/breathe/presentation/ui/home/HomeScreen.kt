@@ -190,9 +190,11 @@ fun HomeScreen(
         ) {
           Text(
             text = "In the pause between stimulus and response lies our growth and our freedom.",
-            style = androidx.compose.material3.MaterialTheme.typography.headlineMedium.copy(lineHeight = 40.sp),
+            style = androidx.compose.material3.MaterialTheme.typography.bodyLarge.copy(lineHeight = 28.sp),
             color = Color(0xFF5A4300),
-            fontStyle = FontStyle.Italic
+            fontStyle = FontStyle.Italic,
+            maxLines = 5,
+            overflow = TextOverflow.Ellipsis
           )
           Text(
             text = "- Viktor Frankl",
@@ -256,7 +258,7 @@ private fun HomeLiveStateCard(uiState: HomeUiState) {
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
       val compact = maxWidth < 380.dp
 
-      Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+      Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(
           modifier = Modifier.fillMaxWidth(),
           horizontalArrangement = Arrangement.SpaceBetween,
@@ -301,7 +303,7 @@ private fun HomeLiveStateCard(uiState: HomeUiState) {
         .fillMaxWidth()
         .border(1.dp, BreatheBorder.copy(alpha = 0.16f), RoundedCornerShape(20.dp))
         .background(BreatheCardSurface.copy(alpha = 0.54f), RoundedCornerShape(20.dp))
-        .padding(16.dp),
+        .padding(horizontal = 12.dp, vertical = 12.dp),
       verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
       Text(
@@ -417,7 +419,7 @@ private fun WeatherStatusCard(
         modifier = Modifier
           .fillMaxWidth(if (narrowChip) 1f else 0.86f)
           .background(chipBackground, RoundedCornerShape(999.dp))
-          .padding(horizontal = 14.dp, vertical = 8.dp),
+          .padding(horizontal = if (narrowChip) 8.dp else 14.dp, vertical = 8.dp),
         style = if (narrowChip) {
           androidx.compose.material3.MaterialTheme.typography.labelMedium
         } else {
@@ -471,7 +473,7 @@ private fun ToolGridButton(
       .clickable(onClick = onClick)
       .padding(16.dp),
     horizontalAlignment = Alignment.CenterHorizontally,
-    verticalArrangement = Arrangement.Center
+    verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically)
   ) {
     Box(
       modifier = Modifier
@@ -481,7 +483,6 @@ private fun ToolGridButton(
     ) {
       Icon(imageVector = icon, contentDescription = title, tint = BreatheAccentStrong)
     }
-    Spacer(modifier = Modifier.height(12.dp))
     Text(
       text = title,
       color = BreatheInk,

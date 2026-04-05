@@ -191,7 +191,7 @@ private fun LogMetricChip(label: String, value: String, modifier: Modifier = Mod
   Column(
     modifier = modifier
       .background(BreatheCardSurface, RoundedCornerShape(18.dp))
-      .padding(horizontal = 14.dp, vertical = 12.dp)
+      .padding(horizontal = 16.dp, vertical = 14.dp)
   ) {
     Text(label.uppercase(), style = androidx.compose.material3.MaterialTheme.typography.labelMedium, color = BreatheMutedInk)
     Text(

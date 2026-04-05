@@ -7,7 +7,7 @@ plugins {
 }
 
 val breatheServerUrl = System.getenv("BREATHE_SERVER_URL") ?: "http://10.0.2.2:3000/"
-val breatheVersionName = "0.3.2"
+val breatheVersionName = "0.3.3"
 
 fun semverVersionCode(version: String): Int {
   val (major, minor, patch) = version.split('.').map(String::toInt)

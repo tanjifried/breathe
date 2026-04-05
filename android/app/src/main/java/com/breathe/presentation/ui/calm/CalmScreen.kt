@@ -260,9 +260,9 @@ private fun SessionInfoRow(icon: ImageVector, label: String, value: String) {
   Row(
     modifier = Modifier
       .fillMaxWidth()
-      .heightIn(min = 72.dp)
+      .heightIn(min = 56.dp)
       .background(BreatheCardSurface, RoundedCornerShape(18.dp))
-      .padding(horizontal = 16.dp, vertical = 14.dp),
+      .padding(horizontal = 16.dp, vertical = 10.dp),
     horizontalArrangement = Arrangement.spacedBy(12.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {

@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -255,9 +256,11 @@ fun QuickUpdatesScreen(
     BreatheCard(containerColor = BreatheYellow.copy(alpha = 0.18f)) {
       Text(
         text = "\"Communication is the bridge between two hearts.\"",
-        style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
+        style = androidx.compose.material3.MaterialTheme.typography.bodyLarge.copy(lineHeight = 26.sp),
         color = BreatheInk,
-        fontStyle = FontStyle.Italic
+        fontStyle = FontStyle.Italic,
+        maxLines = 4,
+        overflow = TextOverflow.Ellipsis
       )
     }
   }
@@ -281,10 +284,9 @@ private fun PresetCard(
       .clip(RoundedCornerShape(22.dp))
       .clickable(onClick = onClick)
       .padding(16.dp),
-    verticalArrangement = Arrangement.Center
+    verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)
   ) {
     Icon(imageVector = preset.icon, contentDescription = null, tint = BreatheAccentStrong)
-    androidx.compose.foundation.layout.Spacer(modifier = Modifier.size(12.dp))
     Text(
       text = preset.label,
       style = androidx.compose.material3.MaterialTheme.typography.titleMedium,

@@ -190,7 +190,12 @@ fun InsightsScreen(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.Top
           ) {
-            Text("•", style = androidx.compose.material3.MaterialTheme.typography.titleMedium, color = BreatheAccentStrong)
+            Text(
+              "•",
+              style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+              color = BreatheAccentStrong,
+              modifier = Modifier.padding(top = 2.dp)
+            )
             Text(
               text = recommendation,
               modifier = Modifier.weight(1f),

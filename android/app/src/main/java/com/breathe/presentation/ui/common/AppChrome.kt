@@ -81,7 +81,7 @@ private val bottomNavDestinations = listOf(
 
 private val SectionSpacing = 24.dp
 private val CardSpacing = 24.dp
-private val HeroPadding = 32.dp
+private val HeroPadding = 28.dp
 
 @Composable
 fun AppScreen(
@@ -131,7 +131,7 @@ fun AppScreen(
 
       content()
 
-      Spacer(modifier = Modifier.height(6.dp))
+      Spacer(modifier = Modifier.height(16.dp))
     }
   }
 }
@@ -220,7 +220,7 @@ private fun BreatheBottomNav(selectedBottomRoute: String?, onNavigate: (String) 
     Row(
       modifier = Modifier
         .fillMaxWidth()
-        .padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 22.dp),
+        .padding(start = 8.dp, end = 8.dp, top = 10.dp, bottom = 22.dp),
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
       bottomNavDestinations.forEach { item ->
@@ -235,7 +235,7 @@ private fun BreatheBottomNav(selectedBottomRoute: String?, onNavigate: (String) 
             )
             .heightIn(min = 56.dp)
             .clickable { onNavigate(item.route) }
-            .padding(horizontal = 6.dp, vertical = 8.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
           horizontalAlignment = Alignment.CenterHorizontally,
           verticalArrangement = Arrangement.Center
         ) {
@@ -337,7 +337,7 @@ fun BreatheCard(
   ) {
     Column(
       modifier = Modifier.padding(contentPadding),
-      verticalArrangement = Arrangement.spacedBy(16.dp)
+      verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
       content()
     }
