@@ -7,6 +7,12 @@ plugins {
 }
 
 val breatheServerUrl = System.getenv("BREATHE_SERVER_URL") ?: "http://10.0.2.2:3000/"
+val breatheVersionName = "0.3.2"
+
+fun semverVersionCode(version: String): Int {
+  val (major, minor, patch) = version.split('.').map(String::toInt)
+  return (major * 10_000) + (minor * 100) + patch
+}
 
 android {
   namespace = "com.breathe"
@@ -16,8 +22,8 @@ android {
     applicationId = "com.breathe"
     minSdk = 29
     targetSdk = 35
-    versionCode = 4
-    versionName = "0.3.0-dev"
+    versionCode = semverVersionCode(breatheVersionName)
+    versionName = breatheVersionName
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
     buildConfigField("String", "DEFAULT_SERVER_URL", "\"$breatheServerUrl\"")

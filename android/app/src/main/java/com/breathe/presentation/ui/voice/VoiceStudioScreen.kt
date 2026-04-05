@@ -5,9 +5,11 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -23,7 +25,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -41,6 +45,7 @@ import com.breathe.presentation.theme.BreatheMutedInk
 import com.breathe.presentation.theme.BreatheOverlay
 import com.breathe.presentation.theme.BreatheRed
 import com.breathe.presentation.theme.BreatheYellow
+import com.breathe.presentation.ui.common.AdaptiveTwoPane
 import com.breathe.presentation.ui.common.AppScreen
 import com.breathe.presentation.ui.common.BreatheCard
 import com.breathe.presentation.ui.common.PrimaryActionButton
@@ -122,34 +127,42 @@ fun VoiceStudioScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(18.dp)
       ) {
-        Box(
-          modifier = Modifier
-            .size(188.dp)
-            .background(BreatheAccent.copy(alpha = 0.08f), CircleShape),
+        BoxWithConstraints(
+          modifier = Modifier.fillMaxWidth(),
           contentAlignment = Alignment.Center
         ) {
+          val outerSize = maxWidth.coerceAtMost(188.dp)
+          val innerSize = outerSize * 0.82f
+
           Box(
             modifier = Modifier
-              .size(154.dp)
-              .background(
-                brush = Brush.linearGradient(
-                  colors = if (uiState.isRecording) {
-                    listOf(BreatheRed.copy(alpha = 0.25f), BreatheCardSurface, BreatheYellow.copy(alpha = 0.18f))
-                  } else {
-                    listOf(BreatheCardSurface, BreatheAccent.copy(alpha = 0.18f), BreatheOverlay)
-                  }
-                ),
-                shape = CircleShape
-              )
-              .border(1.dp, BreatheBorder.copy(alpha = 0.4f), CircleShape),
+              .size(outerSize)
+              .background(BreatheAccent.copy(alpha = 0.08f), CircleShape),
             contentAlignment = Alignment.Center
           ) {
-            Icon(
-              imageVector = if (uiState.isRecording) Icons.Rounded.GraphicEq else Icons.Rounded.Mic,
-              contentDescription = null,
-              tint = if (uiState.isRecording) BreatheRed else BreatheAccentStrong,
-              modifier = Modifier.size(56.dp)
-            )
+            Box(
+              modifier = Modifier
+                .size(innerSize)
+                .background(
+                  brush = Brush.linearGradient(
+                    colors = if (uiState.isRecording) {
+                      listOf(BreatheRed.copy(alpha = 0.25f), BreatheCardSurface, BreatheYellow.copy(alpha = 0.18f))
+                    } else {
+                      listOf(BreatheCardSurface, BreatheAccent.copy(alpha = 0.18f), BreatheOverlay)
+                    }
+                  ),
+                  shape = CircleShape
+                )
+                .border(1.dp, BreatheBorder.copy(alpha = 0.4f), CircleShape),
+              contentAlignment = Alignment.Center
+            ) {
+              Icon(
+                imageVector = if (uiState.isRecording) Icons.Rounded.GraphicEq else Icons.Rounded.Mic,
+                contentDescription = null,
+                tint = if (uiState.isRecording) BreatheRed else BreatheAccentStrong,
+                modifier = Modifier.size(56.dp)
+              )
+            }
           }
         }
 
@@ -162,28 +175,34 @@ fun VoiceStudioScreen(
           Text(
             text = uiState.currentPromptLabel ?: "Choose a slot below to preview the prompt you want to record.",
             style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
-            color = BreatheMutedInk
+            color = BreatheMutedInk,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis
           )
         }
       }
     }
 
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-      VoiceInfoCard(
-        modifier = Modifier.weight(1f),
-        label = "Recording",
-        value = if (uiState.isRecording) "In progress" else "Idle",
-        icon = if (uiState.isRecording) Icons.Rounded.GraphicEq else Icons.Rounded.RadioButtonChecked
-      )
-      VoiceInfoCard(
-        modifier = Modifier.weight(1f),
-        label = "Slot",
-        value = uiState.currentSlot?.toString() ?: "None",
-        icon = Icons.Rounded.Mic
-      )
-    }
+    AdaptiveTwoPane(
+      first = { paneModifier ->
+        VoiceInfoCard(
+          modifier = paneModifier,
+          label = "Recording",
+          value = if (uiState.isRecording) "In progress" else "Idle",
+          icon = if (uiState.isRecording) Icons.Rounded.GraphicEq else Icons.Rounded.RadioButtonChecked
+        )
+      },
+      second = { paneModifier ->
+        VoiceInfoCard(
+          modifier = paneModifier,
+          label = "Slot",
+          value = uiState.currentSlot?.toString() ?: "None",
+          icon = Icons.Rounded.Mic
+        )
+      }
+    )
 
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
       Text(
         text = "Prompt slots",
         style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
@@ -214,10 +233,27 @@ private fun VoiceInfoCard(
   icon: androidx.compose.ui.graphics.vector.ImageVector,
   modifier: Modifier = Modifier
 ) {
-  BreatheCard(modifier = modifier, containerColor = BreatheCardSurface) {
-    Icon(imageVector = icon, contentDescription = null, tint = BreatheAccentStrong)
-    Text(label.uppercase(), style = androidx.compose.material3.MaterialTheme.typography.labelMedium, color = BreatheMutedInk)
-    Text(value, style = androidx.compose.material3.MaterialTheme.typography.titleMedium, color = BreatheInk)
+  BreatheCard(modifier = modifier.heightIn(min = 96.dp), containerColor = BreatheCardSurface) {
+    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+      Box(
+        modifier = Modifier
+          .size(44.dp)
+          .background(BreatheOverlay.copy(alpha = 0.72f), CircleShape),
+        contentAlignment = Alignment.Center
+      ) {
+        Icon(imageVector = icon, contentDescription = null, tint = BreatheAccentStrong)
+      }
+      Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(label.uppercase(), style = androidx.compose.material3.MaterialTheme.typography.labelMedium, color = BreatheMutedInk)
+        Text(
+          text = value,
+          style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+          color = BreatheInk,
+          maxLines = 2,
+          overflow = TextOverflow.Ellipsis
+        )
+      }
+    }
   }
 }
 
@@ -231,14 +267,25 @@ private fun VoicePromptCard(prompt: VoicePrompt, selected: Boolean, onClick: () 
         RoundedCornerShape(22.dp)
       )
       .border(1.dp, if (selected) BreatheAccentStrong else BreatheBorder.copy(alpha = 0.2f), RoundedCornerShape(22.dp))
+      .heightIn(min = 88.dp)
+      .clip(RoundedCornerShape(22.dp))
       .clickable(onClick = onClick)
-      .padding(horizontal = 18.dp, vertical = 18.dp),
-    horizontalArrangement = Arrangement.SpaceBetween,
+      .padding(16.dp),
+    horizontalArrangement = Arrangement.spacedBy(16.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(
+      modifier = Modifier.weight(1f),
+      verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
       Text("Slot ${prompt.slot}", style = androidx.compose.material3.MaterialTheme.typography.labelMedium, color = BreatheMutedInk)
-      Text(prompt.label, style = androidx.compose.material3.MaterialTheme.typography.titleMedium, color = BreatheInk)
+      Text(
+        text = prompt.label,
+        style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+        color = BreatheInk,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis
+      )
     }
 
     Box(

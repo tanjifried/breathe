@@ -1,10 +1,12 @@
 package com.breathe.presentation.ui.common
 
+import com.breathe.BuildConfig
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,8 +15,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,13 +28,11 @@ import androidx.compose.material.icons.rounded.AutoGraph
 import androidx.compose.material.icons.rounded.EditNote
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Home
-import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -39,12 +41,15 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.breathe.domain.model.StatusLevel
 import com.breathe.presentation.navigation.Screen
@@ -73,6 +78,10 @@ private val bottomNavDestinations = listOf(
   BottomNavDestination(Screen.Insights.route, "Insights", Icons.Rounded.AutoGraph),
   BottomNavDestination(Screen.Status.route, "Status", Icons.Rounded.Favorite)
 )
+
+private val SectionSpacing = 24.dp
+private val CardSpacing = 24.dp
+private val HeroPadding = 32.dp
 
 @Composable
 fun AppScreen(
@@ -104,10 +113,10 @@ fun AppScreen(
         )
         .verticalScroll(rememberScrollState())
         .padding(innerPadding)
-        .padding(horizontal = 24.dp, vertical = 18.dp),
-      verticalArrangement = Arrangement.spacedBy(28.dp)
+        .padding(horizontal = 20.dp, vertical = 18.dp),
+      verticalArrangement = Arrangement.spacedBy(SectionSpacing)
     ) {
-      Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+      Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
           text = title,
           style = MaterialTheme.typography.headlineLarge,
@@ -137,45 +146,67 @@ private fun BreatheTopBar() {
     Row(
       modifier = Modifier
         .fillMaxWidth()
-        .padding(horizontal = 24.dp, vertical = 14.dp),
+        .padding(horizontal = 20.dp, vertical = 14.dp),
       verticalAlignment = Alignment.CenterVertically
-    ) {
-      Box(
-        modifier = Modifier
-          .size(40.dp)
-          .background(BreatheOverlay, CircleShape)
-          .border(1.dp, BreatheBorder.copy(alpha = 0.45f), CircleShape),
-        contentAlignment = Alignment.Center
       ) {
-        Text(
-          text = "B",
-          color = BreatheAccentStrong,
-          style = MaterialTheme.typography.titleMedium,
-          fontStyle = FontStyle.Italic,
-          fontWeight = FontWeight.SemiBold
-        )
+        Box(
+        modifier = Modifier.width(76.dp),
+        contentAlignment = Alignment.CenterStart
+      ) {
+        Box(
+          modifier = Modifier
+            .size(40.dp)
+            .background(BreatheOverlay, CircleShape)
+            .border(1.dp, BreatheBorder.copy(alpha = 0.45f), CircleShape),
+          contentAlignment = Alignment.Center
+        ) {
+          Text(
+            text = "B",
+            color = BreatheAccentStrong,
+            style = MaterialTheme.typography.titleMedium,
+            fontStyle = FontStyle.Italic,
+            fontWeight = FontWeight.SemiBold
+          )
+        }
       }
 
-      Box(
+      Text(
+        text = "Breathe",
         modifier = Modifier.weight(1f),
-        contentAlignment = Alignment.Center
-      ) {
-        Text(
-          text = "Breathe",
-          style = MaterialTheme.typography.headlineMedium,
-          color = BreatheAccentStrong,
-          fontStyle = FontStyle.Italic
-        )
-      }
+        style = MaterialTheme.typography.headlineMedium,
+        color = BreatheAccentStrong,
+        fontStyle = FontStyle.Italic,
+        textAlign = TextAlign.Center,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
+      )
 
-      IconButton(onClick = {}) {
-        Icon(
-          imageVector = Icons.Rounded.Settings,
-          contentDescription = "Settings",
-          tint = BreatheAccentStrong
-        )
+      Box(
+        modifier = Modifier.width(76.dp),
+        contentAlignment = Alignment.CenterEnd
+      ) {
+        VersionPill()
       }
     }
+  }
+}
+
+@Composable
+private fun VersionPill() {
+  Surface(
+    color = BreatheOverlay.copy(alpha = 0.92f),
+    shape = RoundedCornerShape(999.dp)
+  ) {
+    Text(
+      text = "v${BuildConfig.VERSION_NAME}",
+      modifier = Modifier
+        .border(1.dp, BreatheBorder.copy(alpha = 0.55f), RoundedCornerShape(999.dp))
+        .padding(horizontal = 12.dp, vertical = 6.dp),
+      style = MaterialTheme.typography.labelLarge,
+      color = BreatheAccentStrong,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis
+    )
   }
 }
 
@@ -197,27 +228,93 @@ private fun BreatheBottomNav(selectedBottomRoute: String?, onNavigate: (String) 
         Column(
           modifier = Modifier
             .weight(1f)
+            .clip(RoundedCornerShape(999.dp))
             .background(
               if (isSelected) BreatheOverlay else Color.Transparent,
               RoundedCornerShape(999.dp)
             )
+            .heightIn(min = 56.dp)
             .clickable { onNavigate(item.route) }
             .padding(horizontal = 6.dp, vertical = 8.dp),
           horizontalAlignment = Alignment.CenterHorizontally,
-          verticalArrangement = Arrangement.spacedBy(2.dp)
+          verticalArrangement = Arrangement.Center
         ) {
           Icon(
             imageVector = item.icon,
             contentDescription = item.label,
             tint = if (isSelected) BreatheAccentStrong else BreatheAccent.copy(alpha = 0.82f)
           )
+          Spacer(modifier = Modifier.height(4.dp))
           Text(
-            text = item.label.uppercase(),
+            text = item.label,
             color = if (isSelected) BreatheAccentStrong else BreatheAccent.copy(alpha = 0.82f),
             style = MaterialTheme.typography.labelMedium,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
           )
         }
+      }
+    }
+  }
+}
+
+@Composable
+fun AdaptiveTwoPane(
+  modifier: Modifier = Modifier,
+  breakpoint: Dp = 340.dp,
+  spacing: Dp = 16.dp,
+  first: @Composable (Modifier) -> Unit,
+  second: @Composable (Modifier) -> Unit
+) {
+  BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+    if (maxWidth < breakpoint) {
+      Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(spacing)
+      ) {
+        first(Modifier.fillMaxWidth())
+        second(Modifier.fillMaxWidth())
+      }
+    } else {
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(spacing)
+      ) {
+        first(Modifier.weight(1f))
+        second(Modifier.weight(1f))
+      }
+    }
+  }
+}
+
+@Composable
+fun AdaptiveThreePane(
+  modifier: Modifier = Modifier,
+  breakpoint: Dp = 680.dp,
+  spacing: Dp = 16.dp,
+  first: @Composable (Modifier) -> Unit,
+  second: @Composable (Modifier) -> Unit,
+  third: @Composable (Modifier) -> Unit
+) {
+  BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+    if (maxWidth < breakpoint) {
+      Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(spacing)
+      ) {
+        first(Modifier.fillMaxWidth())
+        second(Modifier.fillMaxWidth())
+        third(Modifier.fillMaxWidth())
+      }
+    } else {
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(spacing)
+      ) {
+        first(Modifier.weight(1f))
+        second(Modifier.weight(1f))
+        third(Modifier.weight(1f))
       }
     }
   }
@@ -227,7 +324,7 @@ private fun BreatheBottomNav(selectedBottomRoute: String?, onNavigate: (String) 
 fun BreatheCard(
   modifier: Modifier = Modifier,
   containerColor: Color = BreatheCardSurface.copy(alpha = 0.96f),
-  contentPadding: PaddingValues = PaddingValues(22.dp),
+  contentPadding: PaddingValues = PaddingValues(CardSpacing),
   content: @Composable ColumnScope.() -> Unit
 ) {
   Card(
@@ -259,7 +356,7 @@ fun HeroCard(
   BreatheCard(
     modifier = modifier,
     containerColor = BreatheCardSurface,
-    contentPadding = PaddingValues(26.dp)
+    contentPadding = PaddingValues(HeroPadding)
   ) {
     Text(eyebrow.uppercase(), style = MaterialTheme.typography.labelMedium, color = accent)
     Text(title, style = MaterialTheme.typography.headlineMedium, color = BreatheInk)
@@ -286,7 +383,9 @@ fun PrimaryActionButton(
   Button(
     onClick = onClick,
     enabled = enabled,
-    modifier = modifier.fillMaxWidth(),
+    modifier = modifier
+      .fillMaxWidth()
+      .heightIn(min = 52.dp),
     shape = shape,
     colors = ButtonDefaults.buttonColors(
       containerColor = Color.Transparent,
@@ -300,7 +399,7 @@ fun PrimaryActionButton(
       modifier = Modifier
         .fillMaxWidth()
         .background(brush = brush, shape = shape)
-        .padding(horizontal = 24.dp, vertical = 18.dp),
+        .padding(horizontal = 24.dp, vertical = 16.dp),
       horizontalArrangement = Arrangement.Center,
       verticalAlignment = Alignment.CenterVertically
     ) {
@@ -324,7 +423,9 @@ fun SecondaryActionButton(
   OutlinedButton(
     onClick = onClick,
     enabled = enabled,
-    modifier = modifier.fillMaxWidth(),
+    modifier = modifier
+      .fillMaxWidth()
+      .heightIn(min = 52.dp),
     colors = ButtonDefaults.outlinedButtonColors(contentColor = BreatheAccentStrong),
     border = androidx.compose.foundation.BorderStroke(1.dp, BreatheBorder),
     shape = RoundedCornerShape(999.dp),

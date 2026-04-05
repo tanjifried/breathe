@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -28,9 +29,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -48,6 +51,7 @@ import com.breathe.presentation.theme.BreatheInk
 import com.breathe.presentation.theme.BreatheMutedInk
 import com.breathe.presentation.theme.BreatheOverlay
 import com.breathe.presentation.theme.BreatheYellow
+import com.breathe.presentation.ui.common.AdaptiveTwoPane
 import com.breathe.presentation.ui.common.AppScreen
 import com.breathe.presentation.ui.common.BreatheCard
 import com.breathe.presentation.ui.common.PrimaryActionButton
@@ -155,83 +159,78 @@ fun QuickUpdatesScreen(
     selectedBottomRoute = null,
     onNavigate = onNavigate
   ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-      BreatheCard(modifier = Modifier.weight(1f), containerColor = BreatheOverlay.copy(alpha = 0.56f)) {
-        Text("LAST SHARED", style = androidx.compose.material3.MaterialTheme.typography.labelMedium, color = BreatheAccentStrong.copy(alpha = 0.6f))
-        Text(
-          text = latest?.let {
-            buildString {
-              append('"')
-              append(if (!it.note.isNullOrBlank()) it.note else it.message)
-              append('"')
-            }
-          } ?: "\"No gentle update yet.\"",
-          style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
-          color = BreatheInk,
-          fontStyle = FontStyle.Italic
-        )
-        Text(
-          text = latest?.createdAt?.let(::relativeTime) ?: "just now",
-          style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-          color = BreatheMutedInk
-        )
-      }
-
-      BreatheCard(modifier = Modifier.weight(1f), containerColor = BreatheAccentStrong.copy(alpha = 0.12f)) {
-        Column(
-          modifier = Modifier.fillMaxWidth(),
-          horizontalAlignment = Alignment.CenterHorizontally,
-          verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-          Box(
-            modifier = Modifier
-              .size(54.dp)
-              .background(BreatheCardSurface, CircleShape),
-            contentAlignment = Alignment.Center
+    AdaptiveTwoPane(
+      first = { paneModifier ->
+        BreatheCard(modifier = paneModifier, containerColor = BreatheOverlay.copy(alpha = 0.56f)) {
+          Text("LAST SHARED", style = androidx.compose.material3.MaterialTheme.typography.labelMedium, color = BreatheAccentStrong.copy(alpha = 0.6f))
+          Text(
+            text = latest?.let {
+              buildString {
+                append('"')
+                append(if (!it.note.isNullOrBlank()) it.note else it.message)
+                append('"')
+              }
+            } ?: "\"No gentle update yet.\"",
+            style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
+            color = BreatheInk,
+            fontStyle = FontStyle.Italic
+          )
+          Text(
+            text = latest?.createdAt?.let(::relativeTime) ?: "just now",
+            style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+            color = BreatheMutedInk
+          )
+        }
+      },
+      second = { paneModifier ->
+        BreatheCard(modifier = paneModifier, containerColor = BreatheAccentStrong.copy(alpha = 0.12f)) {
+          Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp)
           ) {
-            Icon(imageVector = Icons.Rounded.Favorite, contentDescription = null, tint = BreatheAccentStrong, modifier = Modifier.size(28.dp))
+            Box(
+              modifier = Modifier
+                .size(54.dp)
+                .background(BreatheCardSurface, CircleShape),
+              contentAlignment = Alignment.Center
+            ) {
+              Icon(imageVector = Icons.Rounded.Favorite, contentDescription = null, tint = BreatheAccentStrong, modifier = Modifier.size(28.dp))
+            }
+            Text("Connected", style = androidx.compose.material3.MaterialTheme.typography.titleMedium, color = BreatheAccentStrong)
           }
-          Text("Connected", style = androidx.compose.material3.MaterialTheme.typography.titleMedium, color = BreatheAccentStrong)
         }
       }
-    }
+    )
 
-    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
       Text(
         text = "CHOOSE A RITUAL UPDATE",
         style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
         color = BreatheAccentStrong.copy(alpha = 0.6f)
       )
 
-      Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-        quickUpdatePresets.take(2).forEach { preset ->
-          PresetCard(
-            preset = preset,
-            selected = uiState.selectedPresetKey == preset.key,
-            onClick = { viewModel.onEvent(QuickUpdatesUiEvent.SelectPreset(preset.key)) },
-            modifier = Modifier.weight(1f)
-          )
-        }
-      }
-      Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-        quickUpdatePresets.drop(2).take(2).forEach { preset ->
-          PresetCard(
-            preset = preset,
-            selected = uiState.selectedPresetKey == preset.key,
-            onClick = { viewModel.onEvent(QuickUpdatesUiEvent.SelectPreset(preset.key)) },
-            modifier = Modifier.weight(1f)
-          )
-        }
-      }
-      Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-        quickUpdatePresets.drop(4).take(2).forEach { preset ->
-          PresetCard(
-            preset = preset,
-            selected = uiState.selectedPresetKey == preset.key,
-            onClick = { viewModel.onEvent(QuickUpdatesUiEvent.SelectPreset(preset.key)) },
-            modifier = Modifier.weight(1f)
-          )
-        }
+      quickUpdatePresets.chunked(2).forEach { rowPresets ->
+        AdaptiveTwoPane(
+          first = { paneModifier ->
+            val preset = rowPresets[0]
+            PresetCard(
+              preset = preset,
+              selected = uiState.selectedPresetKey == preset.key,
+              onClick = { viewModel.onEvent(QuickUpdatesUiEvent.SelectPreset(preset.key)) },
+              modifier = paneModifier
+            )
+          },
+          second = { paneModifier ->
+            val preset = rowPresets[1]
+            PresetCard(
+              preset = preset,
+              selected = uiState.selectedPresetKey == preset.key,
+              onClick = { viewModel.onEvent(QuickUpdatesUiEvent.SelectPreset(preset.key)) },
+              modifier = paneModifier
+            )
+          }
+        )
       }
     }
 
@@ -278,12 +277,21 @@ private fun PresetCard(
         RoundedCornerShape(22.dp)
       )
       .border(1.dp, if (selected) BreatheAccentStrong else BreatheBorder.copy(alpha = 0.25f), RoundedCornerShape(22.dp))
+      .heightIn(min = 116.dp)
+      .clip(RoundedCornerShape(22.dp))
       .clickable(onClick = onClick)
-      .padding(horizontal = 16.dp, vertical = 18.dp),
-    verticalArrangement = Arrangement.spacedBy(14.dp)
+      .padding(16.dp),
+    verticalArrangement = Arrangement.Center
   ) {
     Icon(imageVector = preset.icon, contentDescription = null, tint = BreatheAccentStrong)
-    Text(preset.label, style = androidx.compose.material3.MaterialTheme.typography.titleMedium, color = BreatheInk)
+    androidx.compose.foundation.layout.Spacer(modifier = Modifier.size(12.dp))
+    Text(
+      text = preset.label,
+      style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+      color = BreatheInk,
+      maxLines = 2,
+      overflow = TextOverflow.Ellipsis
+    )
   }
 }
 

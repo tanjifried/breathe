@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -17,6 +18,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -33,6 +36,7 @@ import com.breathe.presentation.theme.BreatheInk
 import com.breathe.presentation.theme.BreatheMutedInk
 import com.breathe.presentation.theme.BreatheOverlay
 import com.breathe.presentation.theme.BreatheYellow
+import com.breathe.presentation.ui.common.AdaptiveTwoPane
 import com.breathe.presentation.ui.common.AppScreen
 import com.breathe.presentation.ui.common.BreatheCard
 import com.breathe.presentation.ui.common.PrimaryActionButton
@@ -98,28 +102,58 @@ fun InsightsScreen(
     onNavigate = onNavigate
   ) {
     BreatheCard(containerColor = BreatheOverlay.copy(alpha = 0.54f)) {
-      Icon(imageVector = Icons.Rounded.AutoGraph, contentDescription = null, tint = BreatheAccentStrong)
-      Text(
-        text = uiState.headline.ifBlank { "No insight yet." },
-        style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
-        color = BreatheInk
-      )
-      Text(
-        text = "This is a weekly reflection on rhythm, not a measure of relationship performance.",
-        style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
-        color = BreatheMutedInk
-      )
+      if (uiState.headline.isBlank() && uiState.recommendations.isEmpty()) {
+        Column(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalAlignment = Alignment.CenterHorizontally,
+          verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+          Icon(imageVector = Icons.Rounded.AutoGraph, contentDescription = null, tint = BreatheBorder)
+          Text(
+            text = "No weekly insight yet",
+            style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
+            color = BreatheInk,
+            textAlign = TextAlign.Center
+          )
+          Text(
+            text = "As you log calm, status, and timeout moments, a softer reflection will gather here.",
+            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+            color = BreatheMutedInk,
+            textAlign = TextAlign.Center
+          )
+        }
+      } else {
+        Icon(imageVector = Icons.Rounded.AutoGraph, contentDescription = null, tint = BreatheAccentStrong)
+        Text(
+          text = uiState.headline,
+          style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
+          color = BreatheInk
+        )
+        Text(
+          text = "This is a weekly reflection on rhythm, not a measure of relationship performance.",
+          style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+          color = BreatheMutedInk
+        )
+      }
     }
 
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-      InsightStatCard(modifier = Modifier.weight(1f), label = "Top feature", value = uiState.topFeature ?: "none")
-      InsightStatCard(modifier = Modifier.weight(1f), label = "Average mood", value = uiState.weeklySummary.averageMood?.formatOneDecimal() ?: "n/a")
-    }
+    AdaptiveTwoPane(
+      first = { paneModifier ->
+        InsightStatCard(modifier = paneModifier, label = "Top feature", value = uiState.topFeature ?: "none")
+      },
+      second = { paneModifier ->
+        InsightStatCard(modifier = paneModifier, label = "Average mood", value = uiState.weeklySummary.averageMood?.formatOneDecimal() ?: "n/a")
+      }
+    )
 
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-      InsightStatCard(modifier = Modifier.weight(1f), label = "Mood direction", value = uiState.moodTrend.direction)
-      InsightStatCard(modifier = Modifier.weight(1f), label = "Shared reflections", value = uiState.weeklySummary.sharedReflections.toString())
-    }
+    AdaptiveTwoPane(
+      first = { paneModifier ->
+        InsightStatCard(modifier = paneModifier, label = "Mood direction", value = uiState.moodTrend.direction)
+      },
+      second = { paneModifier ->
+        InsightStatCard(modifier = paneModifier, label = "Shared reflections", value = uiState.weeklySummary.sharedReflections.toString())
+      }
+    )
 
     BreatheCard(containerColor = BreatheCardSurface) {
       Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -128,19 +162,41 @@ fun InsightsScreen(
       }
 
       if (uiState.recommendations.isEmpty()) {
-        Text("No recommendations yet.", style = androidx.compose.material3.MaterialTheme.typography.bodyMedium, color = BreatheMutedInk)
+        Column(
+          modifier = Modifier.fillMaxWidth(),
+          horizontalAlignment = Alignment.CenterHorizontally,
+          verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+          Text(
+            text = "No recommendations yet.",
+            style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+            color = BreatheMutedInk,
+            textAlign = TextAlign.Center
+          )
+          Text(
+            text = "A few more check-ins will give this space something gentle to offer back.",
+            style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+            color = BreatheMutedInk,
+            textAlign = TextAlign.Center
+          )
+        }
       } else {
         uiState.recommendations.forEach { recommendation ->
           Row(
             modifier = Modifier
               .fillMaxWidth()
               .background(BreatheOverlay.copy(alpha = 0.52f), RoundedCornerShape(18.dp))
-              .padding(horizontal = 14.dp, vertical = 12.dp),
+              .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.Top
           ) {
             Text("•", style = androidx.compose.material3.MaterialTheme.typography.titleMedium, color = BreatheAccentStrong)
-            Text(recommendation, style = androidx.compose.material3.MaterialTheme.typography.bodyMedium, color = BreatheInk)
+            Text(
+              text = recommendation,
+              modifier = Modifier.weight(1f),
+              style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+              color = BreatheInk
+            )
           }
         }
       }
@@ -164,9 +220,15 @@ fun InsightsScreen(
 
 @Composable
 private fun InsightStatCard(label: String, value: String, modifier: Modifier = Modifier) {
-  BreatheCard(modifier = modifier, containerColor = BreatheCardSurface) {
+  BreatheCard(modifier = modifier.heightIn(min = 104.dp), containerColor = BreatheCardSurface) {
     Text(label.uppercase(), style = androidx.compose.material3.MaterialTheme.typography.labelMedium, color = BreatheMutedInk)
-    Text(value, style = androidx.compose.material3.MaterialTheme.typography.titleMedium, color = BreatheInk)
+    Text(
+      text = value,
+      style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+      color = BreatheInk,
+      maxLines = 2,
+      overflow = TextOverflow.Ellipsis
+    )
   }
 }
 

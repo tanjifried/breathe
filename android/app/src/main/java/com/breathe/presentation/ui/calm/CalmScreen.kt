@@ -4,9 +4,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -23,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -202,25 +205,29 @@ fun CalmScreen(
 
 @Composable
 private fun CalmOrb(secondsRemaining: Int) {
-  Box(
+  BoxWithConstraints(
     modifier = Modifier.fillMaxWidth(),
     contentAlignment = Alignment.Center
   ) {
+    val outerSize = maxWidth.coerceAtMost(268.dp)
+    val middleSize = outerSize * 0.88f
+    val innerSize = outerSize * 0.78f
+
     Box(
       modifier = Modifier
-        .size(268.dp)
+        .size(outerSize)
         .background(BreatheAccent.copy(alpha = 0.08f), CircleShape),
       contentAlignment = Alignment.Center
     ) {
       Box(
         modifier = Modifier
-          .size(236.dp)
+          .size(middleSize)
           .background(BreatheAccent.copy(alpha = 0.12f), CircleShape),
         contentAlignment = Alignment.Center
       ) {
         Box(
           modifier = Modifier
-            .size(208.dp)
+            .size(innerSize)
             .background(
               brush = Brush.linearGradient(
                 colors = listOf(BreatheCardSurface, BreatheGreen.copy(alpha = 0.18f), BreatheYellow.copy(alpha = 0.18f))
@@ -253,6 +260,7 @@ private fun SessionInfoRow(icon: ImageVector, label: String, value: String) {
   Row(
     modifier = Modifier
       .fillMaxWidth()
+      .heightIn(min = 72.dp)
       .background(BreatheCardSurface, RoundedCornerShape(18.dp))
       .padding(horizontal = 16.dp, vertical = 14.dp),
     horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -267,9 +275,15 @@ private fun SessionInfoRow(icon: ImageVector, label: String, value: String) {
       Icon(imageVector = icon, contentDescription = null, tint = BreatheAccentStrong)
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
       Text(label, style = androidx.compose.material3.MaterialTheme.typography.labelMedium, color = BreatheMutedInk)
-      Text(value, style = androidx.compose.material3.MaterialTheme.typography.titleMedium, color = BreatheInk)
+      Text(
+        text = value,
+        style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+        color = BreatheInk,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis
+      )
     }
   }
 }

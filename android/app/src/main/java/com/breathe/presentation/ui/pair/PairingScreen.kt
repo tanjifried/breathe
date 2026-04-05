@@ -270,6 +270,7 @@ fun PairingScreen(
         Button(
           onClick = { viewModel.onEvent(PairingUiEvent.RegisterAccount) },
           enabled = !uiState.isLoading && !uiState.isRegistered,
+          modifier = Modifier.fillMaxWidth(),
           colors = ButtonDefaults.buttonColors(containerColor = BreatheAccentStrong, contentColor = BreatheCanvas)
         ) {
           Text(if (uiState.isRegistered) "Account ready" else "Create private account")
@@ -277,7 +278,8 @@ fun PairingScreen(
 
         Button(
           onClick = { viewModel.onEvent(PairingUiEvent.SignIn) },
-          enabled = !uiState.isLoading && !uiState.isRegistered
+          enabled = !uiState.isLoading && !uiState.isRegistered,
+          modifier = Modifier.fillMaxWidth()
         ) {
           Text("Sign in")
         }
@@ -285,7 +287,8 @@ fun PairingScreen(
         if (BuildConfig.DEBUG) {
           Button(
             onClick = { viewModel.onEvent(PairingUiEvent.ContinueOffline) },
-            enabled = !uiState.isLoading
+            enabled = !uiState.isLoading,
+            modifier = Modifier.fillMaxWidth()
           ) {
             Text("Continue offline")
           }

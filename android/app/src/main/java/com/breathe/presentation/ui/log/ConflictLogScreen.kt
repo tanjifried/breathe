@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -19,7 +20,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -38,9 +42,10 @@ import com.breathe.presentation.theme.BreatheMutedInk
 import com.breathe.presentation.theme.BreatheOverlay
 import com.breathe.presentation.theme.BreatheRed
 import com.breathe.presentation.theme.BreatheYellow
+import com.breathe.presentation.ui.common.AdaptiveThreePane
+import com.breathe.presentation.ui.common.AdaptiveTwoPane
 import com.breathe.presentation.ui.common.AppScreen
 import com.breathe.presentation.ui.common.BreatheCard
-import com.breathe.presentation.ui.common.PrimaryActionButton
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -99,11 +104,17 @@ fun ConflictLogScreen(
     selectedBottomRoute = Screen.Log.route,
     onNavigate = onNavigate
   ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-      LogSummaryCard(modifier = Modifier.weight(1f), label = "Entries", value = uiState.entries.size.toString())
-      LogSummaryCard(modifier = Modifier.weight(1f), label = "Selected", value = uiState.selectedEntry?.feature?.name ?: "None")
-      LogSummaryCard(modifier = Modifier.weight(1f), label = "Shared", value = if (uiState.isShared) "Yes" else "No")
-    }
+    AdaptiveThreePane(
+      first = { paneModifier ->
+        LogSummaryCard(modifier = paneModifier, label = "Entries", value = uiState.entries.size.toString())
+      },
+      second = { paneModifier ->
+        LogSummaryCard(modifier = paneModifier, label = "Selected", value = uiState.selectedEntry?.feature?.let(::featureSummaryLabel) ?: "None")
+      },
+      third = { paneModifier ->
+        LogSummaryCard(modifier = paneModifier, label = "Shared", value = if (uiState.isShared) "Yes" else "No")
+      }
+    )
 
     BreatheCard(containerColor = BreatheOverlay.copy(alpha = 0.54f)) {
       Text("Selected entry", style = androidx.compose.material3.MaterialTheme.typography.headlineMedium, color = BreatheAccentStrong)
@@ -117,7 +128,7 @@ fun ConflictLogScreen(
             contentDescription = null,
             tint = featureAccent(entry.feature)
           )
-          Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+          Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(featureTitle(entry.feature), style = androidx.compose.material3.MaterialTheme.typography.titleMedium, color = BreatheInk)
             Text(prettyMoment(entry.startedAt), style = androidx.compose.material3.MaterialTheme.typography.bodySmall, color = BreatheMutedInk)
           }
@@ -127,14 +138,18 @@ fun ConflictLogScreen(
           style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
           color = BreatheMutedInk
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-          LogMetricChip(modifier = Modifier.weight(1f), label = "Duration", value = entry.durationSeconds?.let { "$it sec" } ?: "Open")
-          LogMetricChip(modifier = Modifier.weight(1f), label = "Mood shift", value = buildMoodShift(entry))
-        }
+        AdaptiveTwoPane(
+          first = { paneModifier ->
+            LogMetricChip(modifier = paneModifier, label = "Duration", value = entry.durationSeconds?.let { "$it sec" } ?: "Open")
+          },
+          second = { paneModifier ->
+            LogMetricChip(modifier = paneModifier, label = "Mood shift", value = buildMoodShift(entry))
+          }
+        )
       }
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
       Text("Entries", style = androidx.compose.material3.MaterialTheme.typography.headlineMedium, color = BreatheAccentStrong)
       if (uiState.entries.isEmpty()) {
         BreatheCard {
@@ -159,9 +174,15 @@ fun ConflictLogScreen(
 
 @Composable
 private fun LogSummaryCard(label: String, value: String, modifier: Modifier = Modifier) {
-  BreatheCard(modifier = modifier, containerColor = BreatheCardSurface) {
+  BreatheCard(modifier = modifier.heightIn(min = 104.dp), containerColor = BreatheCardSurface) {
     Text(label.uppercase(), style = androidx.compose.material3.MaterialTheme.typography.labelMedium, color = BreatheMutedInk)
-    Text(value, style = androidx.compose.material3.MaterialTheme.typography.titleMedium, color = BreatheInk)
+    Text(
+      text = value,
+      style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+      color = BreatheInk,
+      maxLines = 2,
+      overflow = TextOverflow.Ellipsis
+    )
   }
 }
 
@@ -173,7 +194,13 @@ private fun LogMetricChip(label: String, value: String, modifier: Modifier = Mod
       .padding(horizontal = 14.dp, vertical = 12.dp)
   ) {
     Text(label.uppercase(), style = androidx.compose.material3.MaterialTheme.typography.labelMedium, color = BreatheMutedInk)
-    Text(value, style = androidx.compose.material3.MaterialTheme.typography.titleMedium, color = BreatheInk)
+    Text(
+      text = value,
+      style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+      color = BreatheInk,
+      maxLines = 2,
+      overflow = TextOverflow.Ellipsis
+    )
   }
 }
 
@@ -187,16 +214,28 @@ private fun LogEntryCard(entry: ConflictLogEntry, selected: Boolean, onClick: ()
         RoundedCornerShape(22.dp)
       )
       .border(1.dp, if (selected) featureAccent(entry.feature) else BreatheBorder.copy(alpha = 0.2f), RoundedCornerShape(22.dp))
+      .heightIn(min = 80.dp)
+      .clip(RoundedCornerShape(22.dp))
       .clickable(onClick = onClick)
-      .padding(horizontal = 18.dp, vertical = 16.dp),
-    horizontalArrangement = Arrangement.SpaceBetween,
+      .padding(horizontal = 16.dp, vertical = 16.dp),
+    horizontalArrangement = Arrangement.spacedBy(16.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Column(
+      modifier = Modifier.weight(1f),
+      verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
       Text(featureTitle(entry.feature), style = androidx.compose.material3.MaterialTheme.typography.titleMedium, color = BreatheInk)
       Text(prettyMoment(entry.startedAt), style = androidx.compose.material3.MaterialTheme.typography.bodySmall, color = BreatheMutedInk)
     }
-    Text(buildMoodShift(entry), style = androidx.compose.material3.MaterialTheme.typography.labelLarge, color = featureAccent(entry.feature))
+    Text(
+      text = buildMoodShift(entry),
+      style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
+      color = featureAccent(entry.feature),
+      textAlign = TextAlign.End,
+      maxLines = 1,
+      overflow = TextOverflow.Ellipsis
+    )
   }
 }
 
@@ -219,6 +258,11 @@ private fun featureAccent(feature: SessionFeature): Color = when (feature) {
 private fun featureTitle(feature: SessionFeature): String = when (feature) {
   SessionFeature.CALM -> "Calm session"
   SessionFeature.TIMEOUT -> "Structured timeout"
+}
+
+private fun featureSummaryLabel(feature: SessionFeature): String = when (feature) {
+  SessionFeature.CALM -> "Calm"
+  SessionFeature.TIMEOUT -> "Timeout"
 }
 
 private fun prettyMoment(raw: String): String = raw.replace('T', ' ').removeSuffix("Z")

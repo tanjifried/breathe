@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -27,9 +28,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -49,6 +53,7 @@ import com.breathe.presentation.theme.BreatheMutedInk
 import com.breathe.presentation.theme.BreatheOverlay
 import com.breathe.presentation.theme.BreatheRed
 import com.breathe.presentation.theme.BreatheYellow
+import com.breathe.presentation.ui.common.AdaptiveTwoPane
 import com.breathe.presentation.ui.common.AppScreen
 import com.breathe.presentation.ui.common.BreatheCard
 import com.breathe.presentation.ui.common.PrimaryActionButton
@@ -111,24 +116,28 @@ fun StatusScreen(
     selectedBottomRoute = Screen.Status.route,
     onNavigate = onNavigate
   ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-      StatusAvatarCard(
-        modifier = Modifier.weight(1f),
-        heading = "You",
-        label = statusPersonaLabel(uiState.selectedStatus),
-        accent = statusAccent(uiState.selectedStatus),
-        icon = statusIcon(uiState.selectedStatus)
-      )
-      StatusAvatarCard(
-        modifier = Modifier.weight(1f),
-        heading = "Partner",
-        label = statusPersonaLabel(uiState.partnerStatus),
-        accent = statusAccent(uiState.partnerStatus),
-        icon = statusIcon(uiState.partnerStatus)
-      )
-    }
+    AdaptiveTwoPane(
+      first = { paneModifier ->
+        StatusAvatarCard(
+          modifier = paneModifier,
+          heading = "You",
+          label = statusPersonaLabel(uiState.selectedStatus),
+          accent = statusAccent(uiState.selectedStatus),
+          icon = statusIcon(uiState.selectedStatus)
+        )
+      },
+      second = { paneModifier ->
+        StatusAvatarCard(
+          modifier = paneModifier,
+          heading = "Partner",
+          label = statusPersonaLabel(uiState.partnerStatus),
+          accent = statusAccent(uiState.partnerStatus),
+          icon = statusIcon(uiState.partnerStatus)
+        )
+      }
+    )
 
-    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
       Text(
         text = "How are you feeling right now?",
         style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
@@ -179,11 +188,11 @@ private fun StatusAvatarCard(
   icon: ImageVector,
   modifier: Modifier = Modifier
 ) {
-  BreatheCard(modifier = modifier, containerColor = BreatheOverlay.copy(alpha = 0.52f)) {
+  BreatheCard(modifier = modifier.heightIn(min = 188.dp), containerColor = BreatheOverlay.copy(alpha = 0.52f)) {
     Column(
       modifier = Modifier.fillMaxWidth(),
       horizontalAlignment = Alignment.CenterHorizontally,
-      verticalArrangement = Arrangement.spacedBy(12.dp)
+      verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
       Box(
         modifier = Modifier
@@ -204,7 +213,10 @@ private fun StatusAvatarCard(
         Text(
           text = label,
           style = androidx.compose.material3.MaterialTheme.typography.headlineMedium,
-          color = BreatheInk
+          color = BreatheInk,
+          textAlign = TextAlign.Center,
+          maxLines = 2,
+          overflow = TextOverflow.Ellipsis
         )
       }
     }
@@ -232,12 +244,18 @@ private fun StatusOptionCard(
         if (selected) accent else BreatheBorder.copy(alpha = 0.18f),
         RoundedCornerShape(24.dp)
       )
+      .heightIn(min = 112.dp)
+      .clip(RoundedCornerShape(24.dp))
       .clickable(onClick = onClick)
-      .padding(horizontal = 18.dp, vertical = 20.dp),
-    horizontalArrangement = Arrangement.SpaceBetween,
-    verticalAlignment = Alignment.CenterVertically
+      .padding(horizontal = 16.dp, vertical = 16.dp),
+    horizontalArrangement = Arrangement.spacedBy(16.dp),
+    verticalAlignment = Alignment.Top
   ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(
+      modifier = Modifier.weight(1f),
+      horizontalArrangement = Arrangement.spacedBy(16.dp),
+      verticalAlignment = Alignment.Top
+    ) {
       Box(
         modifier = Modifier
           .size(48.dp)
@@ -246,16 +264,32 @@ private fun StatusOptionCard(
       ) {
         Icon(imageVector = icon, contentDescription = null, tint = accent)
       }
-      Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(title, style = androidx.compose.material3.MaterialTheme.typography.headlineMedium, color = accent)
-        Text(body, style = androidx.compose.material3.MaterialTheme.typography.bodyMedium, color = BreatheMutedInk)
+      Column(
+        modifier = Modifier.weight(1f),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+      ) {
+        Text(
+          title,
+          style = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+          color = accent,
+          maxLines = 2,
+          overflow = TextOverflow.Ellipsis
+        )
+        Text(
+          text = body,
+          style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+          color = BreatheMutedInk,
+          maxLines = 3,
+          overflow = TextOverflow.Ellipsis
+        )
       }
     }
 
     Icon(
       imageVector = Icons.Rounded.Favorite,
       contentDescription = null,
-      tint = if (selected) accent else BreatheBorder
+      tint = if (selected) accent else BreatheBorder,
+      modifier = Modifier.padding(top = 2.dp)
     )
   }
 }
@@ -286,9 +320,17 @@ private fun SelectionNudgeCard(status: StatusLevel?) {
   }
 
   BreatheCard(containerColor = accent.copy(alpha = 0.12f)) {
-    Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.Top) {
-      Icon(imageVector = Icons.Rounded.Lightbulb, contentDescription = null, tint = accent, modifier = Modifier.padding(top = 4.dp))
-      Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalAlignment = Alignment.Top) {
+      Box(
+        modifier = Modifier
+          .padding(top = 2.dp)
+          .size(40.dp)
+          .background(accent.copy(alpha = 0.14f), CircleShape),
+        contentAlignment = Alignment.Center
+      ) {
+        Icon(imageVector = Icons.Rounded.Lightbulb, contentDescription = null, tint = accent)
+      }
+      Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(title, style = androidx.compose.material3.MaterialTheme.typography.headlineMedium, color = BreatheInk)
         Text(body, style = androidx.compose.material3.MaterialTheme.typography.bodyMedium, color = BreatheMutedInk)
       }

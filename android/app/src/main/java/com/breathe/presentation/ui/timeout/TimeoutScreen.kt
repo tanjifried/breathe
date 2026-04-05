@@ -3,6 +3,7 @@ package com.breathe.presentation.ui.timeout
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -44,6 +45,7 @@ import com.breathe.presentation.theme.BreatheMutedInk
 import com.breathe.presentation.theme.BreatheOverlay
 import com.breathe.presentation.theme.BreatheRed
 import com.breathe.presentation.theme.BreatheYellow
+import com.breathe.presentation.ui.common.AdaptiveTwoPane
 import com.breathe.presentation.ui.common.AppScreen
 import com.breathe.presentation.ui.common.BreatheCard
 import com.breathe.presentation.ui.common.PrimaryActionButton
@@ -141,7 +143,7 @@ fun TimeoutScreen(
       Column(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(18.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
       ) {
         Box(
           modifier = Modifier
@@ -151,7 +153,7 @@ fun TimeoutScreen(
         ) {
           Icon(imageVector = Icons.Rounded.Lock, contentDescription = null, tint = BreatheRed, modifier = Modifier.size(38.dp))
         }
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
           Text("CURRENT STATE", style = androidx.compose.material3.MaterialTheme.typography.labelMedium, color = BreatheRed)
           Text("Locked: ${if (uiState.isLocked) "Yes" else "No"}", style = androidx.compose.material3.MaterialTheme.typography.headlineMedium, color = BreatheInk)
         }
@@ -160,31 +162,43 @@ fun TimeoutScreen(
       }
     }
 
-    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-      BreatheCard(modifier = Modifier.weight(1f), containerColor = BreatheCardSurface) {
-        Icon(imageVector = Icons.Rounded.DoorFront, contentDescription = null, tint = BreatheAccentStrong)
-        Text("Re-entry window opens at ${uiState.unlocksAt ?: "--:--"}.", style = androidx.compose.material3.MaterialTheme.typography.titleMedium, color = BreatheInk)
-        Text("Move slowly. There is no rush to return.", style = androidx.compose.material3.MaterialTheme.typography.bodySmall, color = BreatheMutedInk)
-      }
-
-      BreatheCard(modifier = Modifier.weight(1f), containerColor = BreatheYellow.copy(alpha = 0.18f)) {
-        Icon(imageVector = Icons.Rounded.SelfImprovement, contentDescription = null, tint = Color(0xFF775A00))
-        Text("Focus on the exhale. Let your heart rate find its floor.", style = androidx.compose.material3.MaterialTheme.typography.titleMedium, color = BreatheInk)
-        Box(
-          modifier = Modifier
-            .fillMaxWidth()
-            .background(BreatheCanvas, RoundedCornerShape(999.dp))
-            .padding(1.dp)
-        ) {
-          Box(
-            modifier = Modifier
-              .fillMaxWidth(0.34f)
-              .background(Color(0xFF775A00), RoundedCornerShape(999.dp))
-              .padding(vertical = 3.dp)
-          )
+    AdaptiveTwoPane(
+      first = { paneModifier ->
+        BreatheCard(modifier = paneModifier, containerColor = BreatheCardSurface) {
+          Icon(imageVector = Icons.Rounded.DoorFront, contentDescription = null, tint = BreatheAccentStrong)
+          Text("Re-entry window opens at ${uiState.unlocksAt ?: "--:--"}.", style = androidx.compose.material3.MaterialTheme.typography.titleMedium, color = BreatheInk)
+          Text("Move slowly. There is no rush to return.", style = androidx.compose.material3.MaterialTheme.typography.bodySmall, color = BreatheMutedInk)
+        }
+      },
+      second = { paneModifier ->
+        BreatheCard(modifier = paneModifier, containerColor = BreatheYellow.copy(alpha = 0.18f)) {
+          Icon(imageVector = Icons.Rounded.SelfImprovement, contentDescription = null, tint = Color(0xFF775A00))
+          Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("Focus on the exhale. Let your heart rate find its floor.", style = androidx.compose.material3.MaterialTheme.typography.titleMedium, color = BreatheInk)
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+              Text(
+                text = "Breathing pace",
+                style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
+                color = Color(0xFF775A00)
+              )
+              Box(
+                modifier = Modifier
+                  .fillMaxWidth()
+                  .background(BreatheCanvas, RoundedCornerShape(999.dp))
+                  .padding(1.dp)
+              ) {
+                Box(
+                  modifier = Modifier
+                    .fillMaxWidth(0.34f)
+                    .background(Color(0xFF775A00), RoundedCornerShape(999.dp))
+                    .padding(vertical = 3.dp)
+                )
+              }
+            }
+          }
         }
       }
-    }
+    )
 
     BreatheCard(containerColor = BreatheCardSurface) {
       Icon(imageVector = Icons.Rounded.Security, contentDescription = null, tint = BreatheAccentStrong)
@@ -196,7 +210,12 @@ fun TimeoutScreen(
       )
       Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         Icon(imageVector = Icons.Rounded.CheckCircle, contentDescription = null, tint = BreatheAccentStrong)
-        Text("Safe space for both partners", style = androidx.compose.material3.MaterialTheme.typography.labelLarge, color = BreatheAccentStrong)
+        Text(
+          text = "Safe space for both partners",
+          modifier = Modifier.weight(1f),
+          style = androidx.compose.material3.MaterialTheme.typography.labelLarge,
+          color = BreatheAccentStrong
+        )
       }
     }
 
@@ -219,16 +238,18 @@ fun TimeoutScreen(
 private fun TimeoutRing(secondsRemaining: Int) {
   val progress = (secondsRemaining.coerceAtLeast(0) / 1_200f).coerceIn(0f, 1f)
 
-  Box(contentAlignment = Alignment.Center) {
+  BoxWithConstraints(contentAlignment = Alignment.Center) {
+    val ringSize = maxWidth.coerceAtMost(184.dp)
+
     CircularProgressIndicator(
       progress = { 1f },
-      modifier = Modifier.size(184.dp),
+      modifier = Modifier.size(ringSize),
       color = BreatheBorder.copy(alpha = 0.38f),
       strokeWidth = 10.dp
     )
     CircularProgressIndicator(
       progress = { progress },
-      modifier = Modifier.size(184.dp),
+      modifier = Modifier.size(ringSize),
       color = BreatheRed,
       strokeWidth = 10.dp
     )
